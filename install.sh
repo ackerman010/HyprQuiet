@@ -112,8 +112,9 @@ sudo dnf upgrade -y
 # Essential build tools and libraries first
 sudo dnf install -y \
     git cargo pkgconfig \
-    gcc-c++ \
+    cmake make gcc-c++ \
     wayland-devel lz4-devel wayland-protocols-devel \
+    libpng-devel cairo-devel gdk-pixbuf2-devel \
     gtk3 gtk2 libnotify gsettings-desktop-schemas \
     fontconfig \
     dnf-plugins-core \
@@ -155,15 +156,26 @@ else
 fi
 
 # 8. Install Hyprpaper
-echo "[8/14] Installing Hyprpaper wallpaper tool..."
+echo "[8/14] Installing Hyprpaper wallpaper tool (using cmake/make)---"
 if ! command_exists hyprpaper; then
     echo "Attempting to install hyprpaper via DNF first..."
     if sudo dnf install -y hyprpaper; then
         echo "Hyprpaper installed successfully via DNF."
     else
-        echo "Hyprpaper not found in DNF, attempting to build from source..."
-        # No specific custom_cd_path; dynamic discovery will handle.
-        build_and_install_rust_project "https://github.com/hyprwm/Hyprpaper.git" "/tmp/hyprpaper_repo" "hyprpaper"
+        echo "Hyprpaper not found in DNF, building from source using cmake/make..."
+        cleanup_temp_dir "/tmp/hyprpaper_repo" # Ensure clean slate before cloning
+        git clone https://github.com/hyprwm/hyprpaper.git "/tmp/hyprpaper_repo"
+        if [ ! -d "/tmp/hyprpaper_repo" ]; then
+            echo "Error: Failed to clone Hyprpaper repository."
+            exit 1
+        fi
+        local current_dir="$PWD"
+        cd "/tmp/hyprpaper_repo"
+        cmake -Bbuild
+        cmake --build build
+        sudo cmake --install build
+        cd "$current_dir" > /dev/null # Return to original directory
+        echo "Hyprpaper installed from source using cmake/make."
     fi
 else
     echo "Hyprpaper already installed, skipping installation."
