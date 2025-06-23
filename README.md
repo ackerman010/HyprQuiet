@@ -57,7 +57,7 @@ chmod +x install.sh
 
 * Use `Super + Enter` to launch your terminal instantly.
 * `Super + [1-9]` to switch between workspaces.
-* Press `Super + Shift + Q` to close focused window with style.
+* Press `Super + W` to see wallpaper menu.
 
 ---
 
