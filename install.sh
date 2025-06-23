@@ -111,28 +111,30 @@ echo "Local scripts deployed and made executable in ~/.local/bin/"
 echo "[4/14] Updating system and installing core packages..."
 sudo dnf upgrade -y
 
-# Enable Hyprland specific COPRs for key packages first, as hyprland-devel might be here
-echo "--- Ensuring Hyprland COPR repository is enabled ---"
-# This COPR often contains hyprland and its development packages.
-if ! sudo dnf copr enable -y "agustinesteso/Hyprland"; then
-    echo "Warning: Failed to enable COPR repository 'agustinesteso/Hyprland'. Hyprland and related devel packages might not be found."
+# Enable Hyprland specific COPR for key packages, essential for hyprland and its devel packages
+echo "--- Ensuring Hyprland COPR repository (atim/hyprland) is enabled ---"
+# Changed COPR to atim/hyprland as agustinesteso/Hyprland might not be available for Fedora 42.
+if ! sudo dnf copr enable -y "atim/hyprland"; then
+    echo "Warning: Failed to enable COPR repository 'atim/hyprland'. Hyprland and related devel packages might not be found."
 fi
 
 
 # Essential build tools and libraries
+# Corrected syntax for multi-line DNF install to avoid "syntax error near unexpected token 'gtk3'"
 sudo dnf install -y \
     git cargo pkgconfig \
     cmake make gcc-c++ \
     wayland-devel lz4-devel wayland-protocols-devel \
     libpng-devel cairo-devel gdk-pixbuf2-devel \
-    hyprland-devel || { echo "Warning: hyprland-devel package could not be installed. This might affect hyprpaper compilation."; } \
+    hyprland-devel \
     gtk3 gtk2 libnotify gsettings-desktop-schemas \
     fontconfig \
     dnf-plugins-core \
     hyprland \
     waybar cava rofi mpv \
     thunar thunar-archive-plugin mate-polkit \
-    sddm swayidle swaylock dmenu
+    sddm swayidle swaylock dmenu || \
+    { echo "Error: One or more DNF packages could not be installed. Please check the output above."; exit 1; }
 echo "Core packages and development tools installed."
 
 # 5. Install Google Noto fonts
