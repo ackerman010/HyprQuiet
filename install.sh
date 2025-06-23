@@ -222,7 +222,8 @@ sudo dnf install -y \
     mpvpaper swaync \
     waybar cava rofi mpv \
     thunar thunar-archive-plugin mate-polkit \
-    sddm swayidle swaylock dmenu || \
+    sddm swayidle swaylock dmenu \
+    ImageMagick || \
     { echo "Error: One or more DNF packages could not be installed. Please check the output above."; exit 1; }
 echo "Core packages and development tools installed."
 
@@ -247,9 +248,19 @@ echo "[6/14] Enabling and starting SDDM display manager..."
 if ! command_exists sddm; then
     sudo dnf install -y sddm
 fi
+# Disable any other active display managers that might conflict
+echo "  - Checking for and disabling conflicting display managers..."
+for dm_service in gdm lightdm xdm; do
+    if systemctl is-enabled "$dm_service" &>/dev/null; then
+        echo "    - Disabling conflicting display manager: $dm_service"
+        sudo systemctl disable "$dm_service" || true
+    fi
+done
 sudo systemctl daemon-reload
-sudo systemctl enable --now sddm
-echo "SDDM enabled and started."
+sudo systemctl enable sddm
+sudo systemctl start sddm # Use start explicitly
+sudo systemctl set-default graphical.target
+echo "SDDM enabled and started. Check 'systemctl status sddm' if issues persist after reboot."
 
 # 7. Install swww wallpaper daemon
 echo "[7/14] Installing swww from source..."
@@ -378,11 +389,13 @@ cleanup_temp_dir "/tmp/tela"
 cleanup_temp_dir "/tmp/catppuccin"
 echo "Temporary directories cleaned up."
 
-echo -e "\n✅ HyprQuiet installed successfully!\nRestart or reload your Hyprland session to apply changes."
+echo -e "\n✅ HyprQuiet installed successfully!\n"
 echo "------------------------------------------------------------"
 echo "IMPORTANT NEXT STEPS:"
 echo "1. Reboot your system: 'sudo reboot'"
 echo "2. After reboot, select 'Hyprland' session from SDDM."
 echo "3. Review your ~/.config/hypr/hyprland.conf and related files to ensure everything is sourced correctly."
 echo "4. You might need to adjust GTK theme variants via 'gsettings set org.gnome.desktop.interface gtk-theme <variant>' or a GUI tool if you prefer a different Catppuccin flavor."
+echo "5. To update your HyprQuiet dotfiles and reinstall packages (e.g., after pulling changes to your local repo):"
+echo "   cd ~/HyprQuiet && git pull origin main && ./install.sh" # Assuming 'main' is your default branch
 echo "Enjoy your new Hyprland setup!"
