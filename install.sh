@@ -20,12 +20,14 @@ cleanup_temp_dir() {
     fi
 }
 
-# Function to build and install Rust projects from source
+# Function to build and install Rust projects from source, with dynamic Cargo.toml discovery
 build_and_install_rust_project() {
     local repo_url="$1"
     local temp_path="$2"
     local bin_name="$3"
-    local custom_cd_path="$4" # Optional: subdirectory to cd into for cargo build
+    # custom_cd_path is no longer directly used as a hardcoded path for cd,
+    # but could be used to hint a starting point for find or for specific cases.
+    # For now, we'll search the entire cloned repo.
 
     echo "Building and installing $bin_name from source..."
     cleanup_temp_dir "$temp_path" # Ensure clean slate before cloning
@@ -39,23 +41,18 @@ build_and_install_rust_project() {
     local current_dir="$PWD"
     cd "$temp_path"
 
-    if [ -n "$custom_cd_path" ]; then
-        if [ -d "$custom_cd_path" ]; then
-            echo "Changing to subdirectory: $custom_cd_path"
-            cd "$custom_cd_path"
-        else
-            echo "Warning: Custom subdirectory '$custom_cd_path' not found in $temp_path. Attempting build from $temp_path."
-            # If custom_cd_path is not found, we fallback to the cloned root.
-            # This might still lead to Cargo.toml not found if it's deeply nested.
-        fi
-    fi
+    # Smart way: Find Cargo.toml in the cloned repository
+    # Limiting depth for performance; adjust if your project nests deeper
+    local cargo_toml_dir=$(find . -type f -name "Cargo.toml" -print -quit | xargs dirname)
 
-    # Check for Cargo.toml after changing directory
-    if [ ! -f "Cargo.toml" ]; then
-        echo "Error: Cargo.toml not found in $(pwd). Cannot build $bin_name. Please check the repository structure or specify custom_cd_path correctly."
+    if [ -z "$cargo_toml_dir" ] || [ ! -f "$cargo_toml_dir/Cargo.toml" ]; then
+        echo "Error: Cargo.toml not found in any subdirectory of $temp_path. Cannot build $bin_name. Please check the repository structure."
         cd "$current_dir" > /dev/null # Return to original directory before exiting
         exit 1
     fi
+
+    echo "Found Cargo.toml in: $temp_path/$cargo_toml_dir. Changing directory..."
+    cd "$cargo_toml_dir"
 
     cargo build --release
     sudo install -Dm755 "target/release/$bin_name" "/usr/local/bin/$bin_name"
@@ -137,8 +134,8 @@ echo "SDDM enabled and started."
 # 7. Install swww wallpaper daemon
 echo "[7/14] Installing swww from source..."
 if ! command_exists swww; then
-    # Based on LGFae/swww repo structure, Cargo.toml is in the root.
-    build_and_install_rust_project "https://github.com/LGFae/swww.git" "/tmp/swww" "swww" ""
+    # Removed custom_cd_path, letting the function discover Cargo.toml
+    build_and_install_rust_project "https://github.com/LGFae/swww.git" "/tmp/swww" "swww"
 else
     echo "swww already installed, skipping source build."
 fi
@@ -151,8 +148,8 @@ if ! command_exists hyprpaper; then
         echo "Hyprpaper installed successfully via DNF."
     else
         echo "Hyprpaper not found in DNF, attempting to build from source..."
-        # This is the crucial fix: specifying the subdirectory 'hyprpaper' within the cloned repo.
-        build_and_install_rust_project "https://github.com/hyprwm/Hyprpaper.git" "/tmp/hyprpaper_repo" "hyprpaper" "hyprpaper"
+        # Removed hardcoded custom_cd_path, letting the function discover Cargo.toml
+        build_and_install_rust_project "https://github.com/hyprwm/Hyprpaper.git" "/tmp/hyprpaper_repo" "hyprpaper"
     fi
 else
     echo "Hyprpaper already installed, skipping installation."
@@ -161,8 +158,8 @@ fi
 # 9. Install Mpvpaper
 echo "[9/14] Installing mpvpaper wallpaper sequencer..."
 if ! command_exists mpvpaper; then
-    # Based on LGFae/mpvpaper repo structure, Cargo.toml is in the root.
-    build_and_install_rust_project "https://github.com/LGFae/mpvpaper.git" "/tmp/mpvpaper" "mpvpaper" ""
+    # Removed custom_cd_path, letting the function discover Cargo.toml
+    build_and_install_rust_project "https://github.com/LGFae/mpvpaper.git" "/tmp/mpvpaper" "mpvpaper"
 else
     echo "mpvpaper already installed, skipping source build."
 fi
@@ -170,8 +167,8 @@ fi
 # 10. Install SwayNC
 echo "[10/14] Installing SwayNC notification daemon..."
 if ! command_exists swync; then
-    # Based on Twnmt/SwayNC repo structure, Cargo.toml is in the root.
-    build_and_install_rust_project "https://github.com/Twnmt/SwayNC.git" "/tmp/swaync" "swaync" ""
+    # Removed custom_cd_path, letting the function discover Cargo.toml
+    build_and_install_rust_project "https://github.com/Twnmt/SwayNC.git" "/tmp/swaync" "swaync"
 else
     echo "SwayNC already installed, skipping source build."
 fi
