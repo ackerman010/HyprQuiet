@@ -242,26 +242,6 @@ sudo dnf install -y \
     google-noto-fonts-common.noarch
 echo "Google Noto fonts installed."
 
-# 6. Enable and start SDDM
-echo "[6/14] Enabling and starting SDDM display manager..."
-# Ensure sddm is installed. It's listed in step 4, but this is a safeguard.
-if ! command_exists sddm; then
-    sudo dnf install -y sddm
-fi
-# Disable any other active display managers that might conflict
-echo "  - Checking for and disabling conflicting display managers..."
-for dm_service in gdm lightdm xdm; do
-    if systemctl is-enabled "$dm_service" &>/dev/null; then
-        echo "    - Disabling conflicting display manager: $dm_service"
-        sudo systemctl disable "$dm_service" || true
-    fi
-done
-sudo systemctl daemon-reload
-sudo systemctl enable sddm
-sudo systemctl start sddm # Use start explicitly
-sudo systemctl set-default graphical.target
-echo "SDDM enabled and started. Check 'systemctl status sddm' if issues persist after reboot."
-
 # 7. Install swww wallpaper daemon
 echo "[7/14] Installing swww from source..."
 # swww is generally not in Hyprland COPRs, so keeping source build for it.
@@ -380,8 +360,28 @@ sudo dnf remove -y dolphin nautilus nemo pantheon-files || true
 xdg-mime default Thunar.desktop inode/directory application/x-zerosize
 echo "Thunar set as default file manager."
 
-# 14. Cleanup temporary folders
-echo "[14/14] Cleaning up temporary build directories..."
+# 14. Enable and start SDDM
+echo "[14/14] Enabling and starting SDDM display manager..."
+# Ensure sddm is installed. It's listed in step 4, but this is a safeguard.
+if ! command_exists sddm; then
+    sudo dnf install -y sddm
+fi
+# Disable any other active display managers that might conflict
+echo "  - Checking for and disabling conflicting display managers..."
+for dm_service in gdm lightdm xdm; do
+    if systemctl is-enabled "$dm_service" &>/dev/null; then
+        echo "    - Disabling conflicting display manager: $dm_service"
+        sudo systemctl disable "$dm_service" || true
+    fi
+done
+sudo systemctl daemon-reload
+sudo systemctl enable sddm
+sudo systemctl start sddm # Use start explicitly
+sudo systemctl set-default graphical.target
+echo "SDDM enabled and started. Check 'systemctl status sddm' if issues persist after reboot."
+
+# 15. Cleanup temporary folders (Renumbered)
+echo "[15/15] Cleaning up temporary build directories..."
 # Consolidated cleanup for all temporary directories used during source builds and theme installations
 cleanup_temp_dir "/tmp/swww"
 # Removed specific cleanup for repos no longer source-built
