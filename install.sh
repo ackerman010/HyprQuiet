@@ -65,16 +65,35 @@ if ! command -v swww &>/dev/null; then
     sudo install -Dm755 target/release/swww /usr/local/bin/swww
     sudo install -Dm755 target/release/swww-daemon /usr/local/bin/swww-daemon
     cd - # Return to previous directory
+else
+    echo "swww already installed, skipping source build."
 fi
 
 # 8. Install Hyprpaper
 echo "[8/14] Installing Hyprpaper wallpaper tool..."
 if ! command -v hyprpaper &>/dev/null; then
-    git clone https://github.com/hyprwm/Hyprpaper.git /tmp/hyprpaper
-    cd /tmp/hyprpaper
-    cargo build --release
-    sudo install -Dm755 target/release/hyprpaper /usr/local/bin/hyprpaper
-    cd - # Return to previous directory
+    echo "Attempting to install hyprpaper via DNF first..."
+    if sudo dnf install -y hyprpaper; then
+        echo "Hyprpaper installed successfully via DNF."
+    else
+        echo "Hyprpaper not found in DNF, attempting to build from source..."
+        # It seems the previous error was "could not find Cargo.toml"
+        # This might be due to cloning the repository into a temporary directory directly,
+        # but the actual source code or Cargo.toml is in a subdirectory.
+        # Let's assume the correct directory to build is the root of the cloned repo.
+        # If the problem persists, we might need to inspect the Hyprpaper repo structure.
+        git clone https://github.com/hyprwm/Hyprpaper.git /tmp/hyprpaper
+        if [ ! -d "/tmp/hyprpaper" ]; then
+            echo "Error: Failed to clone Hyprpaper repository."
+            exit 1
+        fi
+        cd /tmp/hyprpaper
+        cargo build --release
+        sudo install -Dm755 target/release/hyprpaper /usr/local/bin/hyprpaper
+        cd - # Return to previous directory
+    fi
+else
+    echo "Hyprpaper already installed, skipping installation."
 fi
 
 # 9. Install Mpvpaper
@@ -85,6 +104,8 @@ if ! command -v mpvpaper &>/dev/null; then
     cargo build --release
     sudo install -Dm755 target/release/mpvpaper /usr/local/bin/mpvpaper
     cd - # Return to previous directory
+else
+    echo "mpvpaper already installed, skipping source build."
 fi
 
 # 10. Install SwayNC
@@ -95,6 +116,8 @@ if ! command -v swync &>/dev/null; then
     cargo build --release
     sudo install -Dm755 target/release/swaync /usr/local/bin/swaync
     cd - # Return to previous directory
+else
+    echo "SwayNC already installed, skipping source build."
 fi
 
 # 11. Install Nerd Fonts fallback (This section might be problematic due to COPR availability or package names)
