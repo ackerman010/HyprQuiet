@@ -116,7 +116,7 @@ build_and_install_cmake_project() {
     # fi
 
     cd "$current_dir" > /dev/null # Return to original directory
-    echo "$bin_name installed from source using cmake/make."
+    echo "$bin_name installed from source."
 }
 
 
@@ -181,19 +181,20 @@ echo "Core packages and development tools installed."
 # We will always build these from source to guarantee the latest compatible versions.
 
 echo "[4.1/14] Installing hyprlang from source..."
-# Check if hyprlang is installed and if it meets the minimum required version
-if ! pkg-config --exists hyprlang || ! pkg-config --atleast-version=0.6.0 hyprlang; then
+# Check if hyprlang is installed and if it meets the minimum required version (now checking for 0.7.1 as per error)
+if ! pkg-config --exists hyprlang || ! pkg-config --atleast-version=0.7.1 hyprlang; then
     build_and_install_cmake_project "https://github.com/hyprwm/hyprlang.git" "/tmp/hyprlang_repo" "hyprlang"
 else
-    echo "hyprlang (>=0.6.0) already installed and meets version requirements, skipping source build."
+    echo "hyprlang (>=0.7.1) already installed and meets version requirements, skipping source build."
 fi
 
 echo "[4.2/14] Installing hyprutils from source..."
-# Check if hyprutils is installed and if it meets the minimum required version
-if ! pkg-config --exists hyprutils || ! pkg-config --atleast-version=0.2.4 hyprutils; then
+# Check if hyprutils is installed and if it meets the minimum required version (now checking for 0.7.1 as per hyprlang requirement)
+# This will force a rebuild if the existing version is < 0.7.1
+if ! pkg-config --exists hyprutils || ! pkg-config --atleast-version=0.7.1 hyprutils; then
     build_and_install_cmake_project "https://github.com/hyprwm/hyprutils.git" "/tmp/hyprutils_repo" "hyprutils"
 else
-    echo "hyprutils (>=0.2.4) already installed and meets version requirements, skipping source build."
+    echo "hyprutils (>=0.7.1) already installed and meets version requirements, skipping source build."
 fi
 
 echo "[4.3/14] Installing hyprgraphics from source..."
