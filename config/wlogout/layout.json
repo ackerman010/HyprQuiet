@@ -1,0 +1,41 @@
+{
+    "label" : "Bye, ackerman!",
+    "layout" : [
+        {
+            "label" : "Shutdown",
+            "action" : "systemctl poweroff",
+            "text" : "",
+            "key" : "s"
+        },
+        {
+            "label" : "Reboot",
+            "action" : "systemctl reboot",
+            "text" : "",
+            "key" : "r"
+        },
+        {
+            "label" : "Lock",
+            "action" : "swaylock",
+            "text" : "",
+            "key" : "l"
+        },
+        {
+            "label" : "Suspend",
+            "action" : "systemctl suspend",
+            "text" : "",
+            "key" : "u"
+        },
+        {
+            "label" : "Logout",
+            "action" : "hyprctl dispatch exit",
+            "text" : "",
+            "key" : "o"
+        },
+        {
+            "label": "Cancel",
+            "action": "wlogout -b 0",
+            "text": "",
+            "key": "Escape"
+        }
+    ]
+}

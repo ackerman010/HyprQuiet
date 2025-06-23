@@ -1,0 +1,63 @@
+/* Rofi-based Wallpaper Selector Theme (v6 - Ultra Compact) */
+* {
+    background-color:  #282a36d0;
+    text-color:        #f8f8f2;
+    font:              "Inter 11";
+}
+
+window {
+    width:      800px;
+    height:     500px;
+    border:     2px;
+    border-radius: 15px;
+    border-color:    #bd93f9;
+    /* MODIFIED: Further reduced padding for an even tighter layout. */
+    padding:    8px;
+}
+
+mainbox {
+    children: [ inputbar, listview ];
+}
+
+listview {
+    columns:    5; 
+    /* MODIFIED: Reduced spacing between thumbnails. */
+    spacing:    8px; 
+    fixed-height: 0;
+    border:     0px;
+}
+
+element {
+    orientation: vertical;
+    padding: 5px;
+    border-radius: 12px;
+    /* This tells the element to only display its icon, hiding the text. */
+    children: [ element-icon ];
+}
+
+element-icon {
+    size: 100px; 
+    border-radius: 8px;
+}
+
+element-text {
+    vertical-align: 0.5;
+    horizontal-align: 0.5;
+}
+
+element normal.normal {
+    background-color: #44475a80;
+}
+
+element selected.normal {
+    background-color: transparent;
+    border: 2px;
+    border-color: #bd93f9;
+}
+
+inputbar {
+    padding: 8px;
+    border-radius: 8px;
+    /* MODIFIED: Significantly reduced bottom margin to close the gap. */
+    margin: 0px 0px 8px 0px;
+}

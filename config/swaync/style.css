@@ -1,0 +1,124 @@
+/*
+ * ==================================================================================
+ * SWAYNC - DEFINITIVE MODERN STYLESHEET (NEW APPROACH)
+ * ==================================================================================
+ * Description: A completely rewritten stylesheet based on a known-working theme
+ * structure, using correct GTK selectors to guarantee a compact and modern UI.
+ * ==================================================================================
+ */
+
+/* -- Hardcoded Color Palette -- */
+@define-color background      #1e1e2e;
+@define-color foreground      #cdd6f4;
+@define-color background-alt  #313244;
+@define-color primary         #89b4fa;
+@define-color urgent          #f38ba8;
+@define-color Notif-bg        #313244; /* A specific background for notifications */
+
+/* -- Main Window (The Floating Panel) -- */
+.notification-center {
+    background-color: @background;
+    border-radius: 12px;
+    border: 1px solid @background-alt;
+    margin: 10px;
+}
+
+/* The main box that holds all widgets */
+.control-center-content-box {
+    padding: 10px;
+}
+
+/* -- Title Widget -- */
+.widget-title {
+    background-color: transparent;
+    padding: 5px;
+    margin: 5px;
+    color: @foreground;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+.widget-title button {
+    background-color: @background-alt;
+    color: @foreground;
+    border-radius: 8px;
+    padding: 2px 10px;
+}
+.widget-title button:hover {
+    background-color: @urgent;
+}
+
+/* -- Do Not Disturb Widget -- */
+.widget-dnd {
+    background-color: @Notif-bg;
+    padding: 10px;
+    margin: 5px;
+    border-radius: 12px;
+}
+.widget-dnd > box {
+    padding: 0 5px;
+}
+.widget-dnd label {
+    font-weight: bold;
+}
+
+/* -- Individual Notification Row -- */
+.notification-row {
+    background-color: transparent;
+    border-radius: 12px;
+    margin: 10px 5px;
+    border: 1px solid @background-alt;
+    padding: 0;
+}
+
+/* The content box inside each notification */
+.notification-content {
+    background-color: @Notif-bg;
+    border-radius: 12px;
+    padding: 12px;
+}
+
+/* Header with app icon and summary */
+.notification-header {
+    margin-bottom: 5px;
+}
+.app-icon {
+    margin-right: 10px;
+}
+.summary {
+    font-weight: bold;
+}
+.timestamp {
+    font-size: 0.9em;
+    color: alpha(@foreground, 0.7);
+}
+
+/* The main text of the notification */
+.body {
+    color: alpha(@foreground, 0.9);
+}
+
+/* The 'x' close button */
+.close-button {
+    background-color: transparent;
+    color: @foreground;
+}
+.close-button:hover {
+    background-color: @urgent;
+    color: @background;
+}
+
+/* Action buttons like 'Reply' */
+.notification-actions {
+    margin-top: 10px;
+}
+.notification-action {
+    background-color: @primary;
+    color: @background;
+    border-radius: 8px;
+    padding: 4px 8px;
+    margin: 0 4px;
+    font-weight: bold;
+}
+.notification-action:hover {
+    background-color: alpha(@primary, 0.8);
+}

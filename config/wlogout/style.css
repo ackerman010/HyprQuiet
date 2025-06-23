@@ -1,0 +1,83 @@
+@define-color fgcolor #ffffff;
+@define-color bgcolor rgba(34, 36, 54, 0.8);
+@define-color accent1 #ff7a93; /* Shutdown */
+@define-color accent2 #b9f27c; /* Reboot */
+@define-color accent3 #ff9e64; /* Lock */
+@define-color accent4 #bb9af7; /* Suspend */
+@define-color accent5 #7da6ff; /* Logout */
+@define-color accent6 #0db9d7; /* Cancel */
+
+* {
+	font-family: "JetBrainsMono Nerd Font";
+    background-image: none;
+    transition: 200ms ease-in-out;
+}
+
+window {
+	background-color: @bgcolor;
+}
+
+button {
+    color: @fgcolor;
+	background-color: transparent;
+	border: 3px solid @fgcolor;
+    border-radius: 15px;
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: 25%;
+    margin: 10px;
+}
+
+button:focus, button:active, button:hover {
+	background-color: @fgcolor;
+    color: #222436;
+	outline-style: none;
+}
+
+#shutdown {
+    background-image: image(url("/usr/share/wlogout/icons/shutdown.png"));
+    border-color: @accent1;
+}
+#shutdown:hover {
+    background-color: @accent1;
+}
+
+#reboot {
+    background-image: image(url("/usr/share/wlogout/icons/reboot.png"));
+    border-color: @accent2;
+}
+#reboot:hover {
+    background-color: @accent2;
+}
+
+#lock {
+    background-image: image(url("/usr/share/wlogout/icons/lock.png"));
+    border-color: @accent3;
+}
+#lock:hover {
+    background-color: @accent3;
+}
+
+#suspend {
+    background-image: image(url("/usr/share/wlogout/icons/suspend.png"));
+    border-color: @accent4;
+}
+#suspend:hover {
+    background-color: @accent4;
+}
+
+#logout {
+    background-image: image(url("/usr/share/wlogout/icons/logout.png"));
+    border-color: @accent5;
+}
+#logout:hover {
+    background-color: @accent5;
+}
+
+#cancel {
+    background-image: image(url("/usr/share/wlogout/icons/cancel.png"));
+    border-color: @accent6;
+}
+#cancel:hover {
+    background-color: @accent6;
+}

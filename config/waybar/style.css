@@ -1,0 +1,158 @@
+/*
+ * ==================================================================================
+ * WAYBAR - MODERN & FLOATING AESTHETIC (Definitive Fix)
+ * ==================================================================================
+ * Description: A modern, eye-catching theme with floating 'pill' modules.
+ * This version styles the center modules individually to create a seamless pill.
+ * ==================================================================================
+ */
+
+/* -- Color Palette -- */
+@define-color background      #1e1e2e;
+@define-color foreground      #cdd6f4;
+@define-color background-alt  #313244;
+@define-color primary         #89b4fa;
+@define-color urgent          #f38ba8;
+@define-color green           #a6e3a1;
+@define-color yellow          #fab387;
+
+/* -- Main Bar -- */
+window#waybar {
+    background: transparent;
+    color: @foreground;
+    font-family: "JetBrainsMono Nerd Font", "Figtree", sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* -- Tooltips -- */
+tooltip {
+    background: @background;
+    border: 2px solid @primary;
+    border-radius: 12px;
+    padding: 8px;
+}
+
+tooltip label {
+    color: @foreground;
+}
+
+/* -- General "Pill" Style for Single Modules -- */
+#workspaces,
+#taskbar,
+#tray,
+#pulseaudio,
+#network,
+#language,
+#custom-power {
+    background-color: alpha(@background, 0.85);
+    border: 2px solid @background-alt;
+    border-radius: 50px;
+    margin: 6px 6px;
+    padding: 2px 18px;
+    transition: all 0.3s ease;
+}
+
+/* -- Hover Effect -- */
+#workspaces:hover,
+#taskbar:hover,
+#clock:hover,
+#custom-separator:hover,
+#custom-notifications:hover,
+#tray:hover,
+#pulseaudio:hover,
+#network:hover,
+#language:hover,
+#custom-power:hover {
+    background-color: @background-alt;
+    border-color: @primary;
+}
+
+/*
+ * ==================================================================================
+ * DEFINITIVE FIX: Styling the Center Modules to form a single pill
+ * ==================================================================================
+ */
+
+/* Common styles for the center pieces */
+#clock, #custom-separator, #custom-notifications {
+    background-color: alpha(@background, 0.85);
+    border: 2px solid @background-alt;
+    padding: 2px 0;
+    margin: 6px 0; /* No horizontal margin */
+}
+
+/* Left piece of the pill (clock) */
+#clock {
+    border-right: none;
+    border-radius: 50px 0 0 50px;
+    padding-left: 18px;
+    padding-right: 10px;
+}
+
+/* Middle piece of the pill (separator) */
+#custom-separator {
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+    padding-left: 0;
+    padding-right: 0;
+    color: @background-alt;
+}
+
+/* Right piece of the pill (notifications) */
+#custom-notifications {
+    border-left: none;
+    border-radius: 0 50px 50px 0;
+    padding-left: 10px;
+    padding-right: 18px;
+    color: @primary;
+}
+
+
+/* -- Workspaces Button Styling -- */
+#workspaces button {
+    color: @foreground;
+    background-color: transparent;
+    border-radius: 50%;
+    padding: 2px 6px;
+    margin: 0 3px;
+    font-size: 12px;
+    transition: all 0.3s ease;
+}
+#workspaces button:hover {
+    background-color: @background-alt;
+}
+#workspaces button.active {
+    color: @primary;
+    font-size: 16px;
+}
+#workspaces button.urgent {
+    color: @urgent;
+}
+
+/* -- Taskbar Button Styling -- */
+#taskbar button {
+    background: transparent;
+    border-radius: 50%;
+    padding: 2px 6px;
+    margin: 0 2px;
+    transition: all 0.3s ease;
+}
+#taskbar button.active {
+    background-color: @primary;
+}
+
+/* -- Specific Module Colors -- */
+#custom-power {
+    color: @urgent;
+}
+#pulseaudio.muted {
+    color: @urgent;
+}
+#network {
+    color: @green;
+}
+#network.disconnected {
+    color: @urgent;
+}

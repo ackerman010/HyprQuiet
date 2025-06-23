@@ -1,0 +1,113 @@
+{
+    "layer": "top",
+    "position": "top",
+    "mod": "dock",
+    "height": 48,
+    "exclusive": true,
+    "passthrough": false,
+    "gtk-layer-shell": true,
+    "reload_style_on_change": true,
+
+    //==> Modules Layout
+    ///////////////////////////////////////////////////////////////
+    "modules-left": [
+        "hyprland/workspaces",
+        "wlr/taskbar",
+        "custom/cava" // FIX: Moved Cava visualizer to the left side
+    ],
+    "modules-center": [
+        "clock",
+        "custom/separator",
+        "custom/notifications"
+    ],
+    "modules-right": [
+        "tray",
+        "pulseaudio",
+        "network",
+        "hyprland/language",
+        "custom/power"
+    ],
+
+    //==> Left Modules
+    ///////////////////////////////////////////////////////////////
+    "hyprland/workspaces": {
+        "all-outputs": true,
+        "on-click": "activate",
+        "format": "{icon}",
+        "format-icons": {
+            "default": "",
+            "active": "",
+            "urgent": ""
+        }
+    },
+    "wlr/taskbar": {
+        "format": "{icon}",
+        "icon-size": 20,
+        "icon-theme": "Tela-circle-dracula",
+        "tooltip-format": "{title}",
+        "on-click": "activate",
+        "on-click-middle": "close"
+    },
+
+    "custom/cava": {
+      "exec": "python ~/.config/waybar/cava.py",
+      "return-type": "json"
+    },
+
+    //==> Middle Modules
+    ///////////////////////////////////////////////////////////////
+    "clock": {
+        "format": " {:%I:%M %p}",
+        "format-alt": " {:%a, %b %d}",
+        "tooltip-format": "<big>{:%Y %B}</big>\n<tt>{calendar}</tt>"
+    },
+    
+    "custom/notifications": {
+        "format": "",
+        "tooltip": false,
+        "on-click": "swaync-client -t"
+    },
+    
+    "custom/separator": {
+        "format": "|",
+        "interval": "once",
+        "tooltip": false
+    },
+
+    //==> Right Modules
+    ///////////////////////////////////////////////////////////////
+    "tray": {
+        "icon-size": 18,
+        "spacing": 10
+    },
+
+    "pulseaudio": {
+        "format": "{volume}% {icon}",
+        "format-muted": "0% 󰝟",
+        "format-icons": {
+            "default": ["", "", ""]
+        },
+        "on-click": "pavucontrol",
+        "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+",
+        "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
+    },
+
+    "network": {
+        "format-wifi": "󰤨",
+        "format-ethernet": "󰈀",
+        "format-disconnected": "󰤮",
+        "tooltip-format": "{ifname} ({essid})",
+        "on-click": "nm-connection-editor"
+    },
+
+    "hyprland/language": {
+        "format": " {}",
+        "min-length": 2
+    },
+
+    "custom/power": {
+        "on-click": "wlogout",
+        "format": "",
+        "tooltip": false
+    }
+}
