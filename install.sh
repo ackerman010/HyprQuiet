@@ -142,16 +142,40 @@ else
 fi
 
 # 2. Deploy new HyprQuiet configs
-echo "[2/14] Deploying HyprQuiet configs..."
-mkdir -p "$HOME/.config/hypr"
-cp -r "$PWD/config/"* "$HOME/.config/hypr/"
-echo "HyprQuiet configs deployed to ~/.config/hypr/"
+echo "[2/14] Deploying HyprQuiet configs to ~/.config/ and related paths..."
+CONFIG_DIRS=("hypr" "rofi" "waybar" "swaync" "hyprwall" "wlogout" "cava")
+
+for dir in "${CONFIG_DIRS[@]}"; do
+    SOURCE_PATH="$PWD/config/$dir"
+    DEST_PATH="$HOME/.config/$dir"
+    
+    if [ -d "$SOURCE_PATH" ]; then
+        echo "  - Deploying $dir configuration..."
+        mkdir -p "$DEST_PATH"
+        # Remove existing contents to ensure a clean overwrite
+        if [ "$(ls -A "$DEST_PATH" 2>/dev/null)" ]; then # Check if directory is not empty
+            echo "    - Clearing existing contents in $DEST_PATH..."
+            sudo rm -rf "$DEST_PATH/*" || true # Use sudo and || true for robustness
+        fi
+        cp -r "$SOURCE_PATH/." "$DEST_PATH/"
+        echo "    - $dir configs deployed to $DEST_PATH"
+    else
+        echo "  - Warning: Source directory $SOURCE_PATH not found, skipping $dir deployment."
+    fi
+done
+echo "HyprQuiet configs deployment complete."
+
 
 # 3. Deploy local scripts
-echo "[3/14] Installing local scripts..."
+echo "[3/14] Installing local scripts to ~/.local/bin/..."
 mkdir -p "$HOME/.local/bin"
+# Remove existing contents to ensure a clean overwrite
+if [ "$(ls -A "$HOME/.local/bin" 2>/dev/null)" ]; then # Check if directory is not empty
+    echo "  - Clearing existing contents in ~/.local/bin/..."
+    sudo rm -rf "$HOME/.local/bin/*" || true
+fi
 cp -r "$PWD/local/bin/"* "$HOME/.local/bin/"
-chmod +x "$HOME/.local/bin/"*
+chmod +x "$HOME/.local/bin/"* # Re-apply executable permissions
 echo "Local scripts deployed and made executable in ~/.local/bin/"
 
 # 4. System update and package installation
@@ -253,10 +277,16 @@ echo "[10/14] SwayNC handled by DNF/COPR in Step 4."
 
 # 11. Install Nerd Fonts fallback (This section might be problematic due to COPR availability or package names)
 echo "[11/14] Installing Nerd Fonts..."
+# Install base nerd-fonts package first
+echo "  - Installing base 'nerd-fonts' package..."
+sudo dnf install -y nerd-fonts || echo "Warning: Base 'nerd-fonts' package could not be installed."
+
 # Using the new COPR for Nerd Fonts
+echo "  - Enabling 'che/nerd-fonts' COPR..."
 if ! sudo dnf copr enable -y "che/nerd-fonts"; then
-    echo "⚠️ COPR enable failed for 'che/nerd-fonts', skipping Nerd Fonts installation from this COPR."
+    echo "⚠️ COPR enable failed for 'che/nerd-fonts', skipping further Nerd Fonts installation from this COPR."
 else
+    echo "  - Installing 'nerd-fonts-complete' from COPR..."
     sudo dnf install -y nerd-fonts-complete || echo "⚠️ nerd-fonts-complete install failed. You may need to install fonts manually."
 fi
 # As a fallback or alternative, installing FiraCode Nerd Font directly (as in previous version)
@@ -277,19 +307,25 @@ fi
 echo "[12/14] Installing Tela Circle Dracula and Catppuccin themes..."
 cleanup_temp_dir "/tmp/tela" # Ensure clean slate before cloning
 git clone --depth 1 https://github.com/vinceliuice/Tela-circle-icon-theme.git /tmp/tela
-if [ ! -d "/tmp/tela" ]; then
+if [ $? -ne 0 ]; then
     echo "Error: Failed to clone Tela Circle Icon Theme repository."
     exit 1
 fi
+if [ ! -d "/tmp/tela" ]; then
+    echo "Error: Cloned Tela Circle Icon Theme directory /tmp/tela does not exist."
+    exit 1
+fi
+
 cd /tmp/tela
 if [ -f "./install.sh" ]; then
     chmod +x ./install.sh
+    echo "  - Running Tela Circle Icon Theme install script..."
     ./install.sh -a
 else
     echo "Error: Tela Circle Icon Theme install.sh not found. Attempting manual copy."
     # Fallback to manual copy if install.sh is missing
-    # Assuming standard theme structure where the actual themes are subdirectories
-    find . -maxdepth 2 -type d -name "Tela-circle-dracula*" -exec sudo cp -r {} /usr/share/icons/ \; || { echo "Error: Failed to manually copy Tela-circle-dracula theme."; exit 1; }
+    # Assumes themes are directly in subdirectories of the cloned repo
+    find . -maxdepth 2 -type d -name "Tela-circle-dracula*" -exec sudo cp -r {} /usr/share/icons/ \; || { echo "Error: Failed to manually copy Tela-circle-dracula theme."; }
     sudo gtk-update-icon-cache -f -t /usr/share/icons/ || { echo "Warning: Failed to update GTK icon cache for Tela theme."; }
 fi
 cd - > /dev/null # Return to previous directory silently
@@ -297,21 +333,26 @@ echo "Tela Circle Dracula Icons installed."
 
 cleanup_temp_dir "/tmp/catppuccin" # Ensure clean slate before cloning
 git clone --depth 1 https://github.com/catppuccin/gtk.git /tmp/catppuccin
-if [ ! -d "/tmp/catppuccin" ]; then
+if [ $? -ne 0 ]; then
     echo "Error: Failed to clone Catppuccin GTK Theme repository."
     exit 1
 fi
+if [ ! -d "/tmp/catppuccin" ]; then
+    echo "Error: Cloned Catppuccin GTK Theme directory /tmp/catppuccin does not exist."
+    exit 1
+fi
+
 cd /tmp/catppuccin
-# Changed to explicitly call the install script with full path and chmod +x
 # Check if install.sh exists and make it executable before running
 if [ -f "./install.sh" ]; then
     chmod +x "./install.sh"
+    echo "  - Running Catppuccin GTK Theme install script (Mocha)..."
     ./install.sh mocha
 else
     echo "Error: Catppuccin GTK Theme install.sh not found. Attempting manual copy."
     # Fallback to manual copy if install.sh is missing
-    # Assuming standard theme structure where the actual theme is a subdirectory
-    find . -maxdepth 2 -type d -name "Catppuccin-Mocha*" -exec sudo cp -r {} /usr/share/themes/ \; || { echo "Error: Failed to manually copy Catppuccin-Mocha theme."; exit 1; }
+    # Assumes themes are directly in subdirectories of the cloned repo
+    find . -maxdepth 2 -type d -name "Catppuccin-Mocha*" -exec sudo cp -r {} /usr/share/themes/ \; || { echo "Error: Failed to manually copy Catppuccin-Mocha theme."; }
 fi
 cd - > /dev/null # Return to previous directory silently
 echo "Catppuccin GTK theme installed."
