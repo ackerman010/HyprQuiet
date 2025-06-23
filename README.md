@@ -47,12 +47,6 @@ chmod +x install.sh
 
 ---
 
-## 📸 Screenshots
-
-<!-- Add your own screenshots here -->
-
----
-
 ## 💡 Tips & Tricks
 
 * Use `Super + Enter` to launch your terminal instantly.
