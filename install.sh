@@ -45,12 +45,15 @@ build_and_install_rust_project() {
             cd "$custom_cd_path"
         else
             echo "Warning: Custom subdirectory '$custom_cd_path' not found in $temp_path. Attempting build from $temp_path."
+            # If custom_cd_path is not found, we fallback to the cloned root.
+            # This might still lead to Cargo.toml not found if it's deeply nested.
         fi
     fi
 
+    # Check for Cargo.toml after changing directory
     if [ ! -f "Cargo.toml" ]; then
-        echo "Error: Cargo.toml not found in $(pwd). Cannot build $bin_name. Please check the repository structure or specify custom_cd_path."
-        cd "$current_dir" > /dev/null
+        echo "Error: Cargo.toml not found in $(pwd). Cannot build $bin_name. Please check the repository structure or specify custom_cd_path correctly."
+        cd "$current_dir" > /dev/null # Return to original directory before exiting
         exit 1
     fi
 
@@ -134,7 +137,7 @@ echo "SDDM enabled and started."
 # 7. Install swww wallpaper daemon
 echo "[7/14] Installing swww from source..."
 if ! command_exists swww; then
-    # swww might have its Cargo.toml directly at root, or in a subdirectory
+    # Based on LGFae/swww repo structure, Cargo.toml is in the root.
     build_and_install_rust_project "https://github.com/LGFae/swww.git" "/tmp/swww" "swww" ""
 else
     echo "swww already installed, skipping source build."
@@ -148,9 +151,8 @@ if ! command_exists hyprpaper; then
         echo "Hyprpaper installed successfully via DNF."
     else
         echo "Hyprpaper not found in DNF, attempting to build from source..."
-        # The error "could not find Cargo.toml" suggests it might be in a subdir or the clone is not as expected.
-        # Let's assume the main Cargo.toml is at the root for now, but use the new function.
-        build_and_install_rust_project "https://github.com/hyprwm/Hyprpaper.git" "/tmp/hyprpaper" "hyprpaper" ""
+        # This is the crucial fix: specifying the subdirectory 'hyprpaper' within the cloned repo.
+        build_and_install_rust_project "https://github.com/hyprwm/Hyprpaper.git" "/tmp/hyprpaper_repo" "hyprpaper" "hyprpaper"
     fi
 else
     echo "Hyprpaper already installed, skipping installation."
@@ -159,6 +161,7 @@ fi
 # 9. Install Mpvpaper
 echo "[9/14] Installing mpvpaper wallpaper sequencer..."
 if ! command_exists mpvpaper; then
+    # Based on LGFae/mpvpaper repo structure, Cargo.toml is in the root.
     build_and_install_rust_project "https://github.com/LGFae/mpvpaper.git" "/tmp/mpvpaper" "mpvpaper" ""
 else
     echo "mpvpaper already installed, skipping source build."
@@ -167,6 +170,7 @@ fi
 # 10. Install SwayNC
 echo "[10/14] Installing SwayNC notification daemon..."
 if ! command_exists swync; then
+    # Based on Twnmt/SwayNC repo structure, Cargo.toml is in the root.
     build_and_install_rust_project "https://github.com/Twnmt/SwayNC.git" "/tmp/swaync" "swaync" ""
 else
     echo "SwayNC already installed, skipping source build."
@@ -234,7 +238,7 @@ echo "Thunar set as default file manager."
 echo "[14/14] Cleaning up temporary build directories..."
 # Consolidated cleanup for all temporary directories used during source builds and theme installations
 cleanup_temp_dir "/tmp/swww"
-cleanup_temp_dir "/tmp/hyprpaper"
+cleanup_temp_dir "/tmp/hyprpaper_repo" # Changed name to match clone path
 cleanup_temp_dir "/tmp/mpvpaper"
 cleanup_temp_dir "/tmp/swaync"
 cleanup_temp_dir "/tmp/tela"
@@ -246,7 +250,6 @@ echo "------------------------------------------------------------"
 echo "IMPORTANT NEXT STEPS:"
 echo "1. Reboot your system: 'sudo reboot'"
 echo "2. After reboot, select 'Hyprland' session from SDDM."
-2. After reboot, select 'Hyprland' session from SDDM.
-3. Review your ~/.config/hypr/hyprland.conf and related files to ensure everything is sourced correctly.
-4. You might need to adjust GTK theme variants via 'gsettings set org.gnome.desktop.interface gtk-theme <variant>' or a GUI tool if you prefer a different Catppuccin flavor.
-Enjoy your new Hyprland setup!
+echo "3. Review your ~/.config/hypr/hyprland.conf and related files to ensure everything is sourced correctly."
+echo "4. You might need to adjust GTK theme variants via 'gsettings set org.gnome.desktop.interface gtk-theme <variant>' or a GUI tool if you prefer a different Catppuccin flavor."
+echo "Enjoy your new Hyprland setup!"
