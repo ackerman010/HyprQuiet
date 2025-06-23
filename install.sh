@@ -7,7 +7,8 @@ TS=$(date +"%Y%m%d-%H%M%S")
 
 # --- GLOBAL PKG_CONFIG_PATH SETUP ---
 # Prioritize /usr/local/lib/pkgconfig for source-built libraries
-export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
+# Use :- to initialize if PKG_CONFIG_PATH is not already set, preventing unbound variable error
+export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
 echo "Global PKG_CONFIG_PATH set to: $PKG_CONFIG_PATH"
 
 # --- Helper Functions ---
@@ -26,7 +27,7 @@ cleanup_temp_dir() {
 }
 
 # Function to build and install Rust projects from source, with a more direct Cargo.toml discovery
-# This function is used for swww, mpvpaper, and swaync, which are Rust-based.
+# This function is now specifically for swww, mpvpaper, and swaync.
 build_and_install_rust_project() {
     local repo_url="$1"
     local temp_path="$2"
@@ -87,7 +88,7 @@ build_and_install_rust_project() {
 }
 
 # Function to build and install C++ projects using CMake
-# This function implicitly uses the globally set PKG_CONFIG_PATH
+# This function is now only used if there's a specific need outside of the COPR.
 build_and_install_cmake_project() {
     local repo_url="$1"
     local temp_path="$2"
@@ -113,16 +114,8 @@ build_and_install_cmake_project() {
     cmake --build .
     sudo cmake --install .
     
-    # Optional manual install if cmake --install doesn't place it correctly
-    # For projects that install properly with cmake --install, this might be redundant.
-    # if [ -f "./$bin_name" ]; then # Check in the current build directory
-    #     sudo install -Dm755 "./$bin_name" "/usr/local/bin/$bin_name"
-    # elif [ -f "../src/$bin_name" ]; then # Check in a common src subdir within parent
-    #     sudo install -Dm755 "../src/$bin_name" "/usr/local/bin/$bin_name"
-    # fi
-
     cd "$current_dir" > /dev/null # Return to original directory
-    echo "$bin_name installed from source."
+    echo "$bin_name installed from source using cmake/make."
 }
 
 
@@ -156,36 +149,18 @@ echo "[4/14] Updating system and installing core packages..."
 sudo dnf upgrade -y
 
 # Enable Hyprland specific COPR for key packages, essential for hyprland and its devel packages
-echo "--- Ensuring Hyprland COPR repository (atim/hyprland) is enabled ---"
-if ! sudo dnf copr enable -y "atim/hyprland"; then
-    echo "Warning: Failed to enable COPR repository 'atim/hyprland'. Hyprland might not be installed with the latest version."
-    echo "Proceeding with installation, but some Hyprland components might not compile correctly."
+echo "--- Ensuring Hyprland COPR repository (solopasha/hyprland) is enabled ---"
+# Switched to solopasha/hyprland COPR for comprehensive Hyprland component availability
+if ! sudo dnf copr enable -y "solopasha/hyprland"; then
+    echo "Error: Failed to enable COPR repository 'solopasha/hyprland'. Please check the COPR name or internet connection."
+    exit 1 # Exit if this critical COPR cannot be enabled
 fi
 
 
-# Essential build tools and libraries for ALL projects (Rust and C++)
-sudo dnf install -y \
-    git cargo pkgconfig \
-    cmake make gcc-c++ \
-    wayland-devel lz4-devel wayland-protocols-devel \
-    libpng-devel cairo-devel gdk-pixbuf2-devel \
-    file-devel \
-    libei-devel libinput-devel \
-    gtk3 gtk2 libnotify gsettings-desktop-schemas \
-    fontconfig \
-    dnf-plugins-core \
-    hyprland \
-    waybar cava rofi mpv \
-    thunar thunar-archive-plugin mate-polkit \
-    sddm swayidle swaylock dmenu || \
-    { echo "Error: One or more DNF packages could not be installed. Please check the output above."; exit 1; }
-echo "Core packages and development tools installed."
-
 # --- PROACTIVE REMOVAL of potentially conflicting older versions from DNF/COPR ---
-# This ensures that our source-built versions are the ones pkg-config finds.
+# This ensures that our newly installed COPR versions are the ones pkg-config finds.
 echo "--- Proactively removing conflicting Hyprland-related DNF packages (if any) ---"
-# Use 'dnf list installed' and grep to remove only if explicitly installed, to avoid errors for non-existent packages
-for pkg in hyprlang hyprutils hyprgraphics; do
+for pkg in hyprlang hyprutils hyprgraphics hyprpaper; do
     if sudo dnf list installed "$pkg" &>/dev/null; then
         echo "Removing conflicting DNF package: $pkg"
         sudo dnf remove -y "$pkg" || true # Use || true to prevent script exit if removal fails for non-critical reasons
@@ -196,34 +171,27 @@ done
 echo "Attempted to remove conflicting Hyprland-related packages."
 
 
-# --- Install Hyprland related libraries from source ---
-# These are critical steps to ensure dependencies like hyprlang, hyprgraphics are the correct versions.
-# We will always build these from source to guarantee the latest compatible versions.
-# The order here is important due to dependencies (hyprgraphics depends on hyprlang/hyprutils, hyprpaper depends on all three).
+# Essential build tools and libraries for ALL projects (Rust and C++)
+# Now installing hyprlang, hyprutils, hyprgraphics, hyprpaper from COPR.
+sudo dnf install -y \
+    git cargo pkgconfig \
+    cmake make gcc-c++ \
+    wayland-devel lz4-devel wayland-protocols-devel \
+    libpng-devel cairo-devel gdk-pixbuf2-devel \
+    file-devel \
+    libei-devel libinput-devel \
+    gtk3 gtk2 libnotify gsettings-desktop-schemas \
+    fontconfig \
+    dnf-plugins-core \
+    hyprland hyprpaper hyprlang hyprutils hyprgraphics \
+    waybar cava rofi mpv \
+    thunar thunar-archive-plugin mate-polkit \
+    sddm swayidle swaylock dmenu || \
+    { echo "Error: One or more DNF packages could not be installed. Please check the output above."; exit 1; }
+echo "Core packages and development tools installed."
 
-echo "[4.1/14] Installing hyprlang from source (ensuring latest compatible version)..."
-# Force build if pkg-config cannot find hyprlang >= 0.7.1
-if ! pkg-config --exists "hyprlang >= 0.7.1"; then
-    build_and_install_cmake_project "https://github.com/hyprwm/hyprlang.git" "/tmp/hyprlang_repo" "hyprlang"
-else
-    echo "hyprlang (>=0.7.1) already installed and meets version requirements, skipping source build."
-fi
-
-echo "[4.2/14] Installing hyprutils from source (ensuring latest compatible version)..."
-# Force build if pkg-config cannot find hyprutils >= 0.7.1
-if ! pkg-config --exists "hyprutils >= 0.7.1"; then
-    build_and_install_cmake_project "https://github.com/hyprwm/hyprutils.git" "/tmp/hyprutils_repo" "hyprutils"
-else
-    echo "hyprutils (>=0.7.1) already installed and meets version requirements, skipping source build."
-fi
-
-echo "[4.3/14] Installing hyprgraphics from source (ensuring latest compatible version)..."
-# Force build if pkg-config cannot find hyprgraphics
-if ! pkg-config --exists hyprgraphics; then
-    build_and_install_cmake_project "https://github.com/hyprwm/hyprgraphics.git" "/tmp/hyprgraphics_repo" "hyprgraphics"
-else
-    echo "hyprgraphics already installed, skipping source build."
-fi
+# --- Removed manual source builds for hyprlang, hyprutils, hyprgraphics, and hyprpaper ---
+# These are now expected to be installed via the solopasha/hyprland COPR in the main dnf install step.
 
 # 5. Install Google Noto fonts
 echo "[5/14] Installing Google Noto fonts..."
@@ -249,6 +217,7 @@ echo "SDDM enabled and started."
 
 # 7. Install swww wallpaper daemon
 echo "[7/14] Installing swww from source..."
+# swww is generally not in Hyprland COPRs, so keeping source build for it.
 if ! command_exists swww; then
     # No specific custom_cd_path; dynamic discovery will handle.
     build_and_install_rust_project "https://github.com/LGFae/swww.git" "/tmp/swww" "swww"
@@ -256,23 +225,19 @@ else
     echo "swww already installed, skipping source build."
 fi
 
-# 8. Install Hyprpaper
-echo "[8/14] Installing Hyprpaper wallpaper tool (using cmake/make)---"
+# 8. Install Hyprpaper (This step is now mostly handled by DNF/COPR)
+echo "[8/14] Installing Hyprpaper wallpaper tool (via DNF/COPR)---"
 if ! command_exists hyprpaper; then
-    echo "Attempting to install hyprpaper via DNF first..."
-    if sudo dnf install -y hyprpaper; then
-        echo "Hyprpaper installed successfully via DNF."
-    else
-        echo "Hyprpaper not found in DNF, building from source using cmake/make..."
-        # Using the new general build_and_install_cmake_project function
-        build_and_install_cmake_project "https://github.com/hyprwm/hyprpaper.git" "/tmp/hyprpaper_repo" "hyprpaper"
-    fi
+    echo "Hyprpaper was not installed by DNF/COPR in step 4. This indicates an issue with the COPR or package name."
+    echo "Please check the COPR setup or manually install hyprpaper."
+    exit 1 # Exit if hyprpaper is still not installed, as it's a core requirement.
 else
-    echo "Hyprpaper already installed, skipping installation."
+    echo "Hyprpaper installed, skipping further action."
 fi
 
 # 9. Install Mpvpaper
 echo "[9/14] Installing mpvpaper wallpaper sequencer..."
+# mpvpaper is generally not in Hyprland COPRs, so keeping source build for it.
 if ! command_exists mpvpaper; then
     # No specific custom_cd_path; dynamic discovery will handle.
     build_and_install_rust_project "https://github.com/LGFae/mpvpaper.git" "/tmp/mpvpaper" "mpvpaper"
@@ -282,6 +247,7 @@ fi
 
 # 10. Install SwayNC
 echo "[10/14] Installing SwayNC notification daemon..."
+# SwayNC is generally not in Hyprland COPRs, so keeping source build for it.
 if ! command_exists swync; then
     # No specific custom_cd_path; dynamic discovery will handle.
     build_and_install_rust_project "https://github.com/Twnmt/SwayNC.git" "/tmp/swaync" "swaync"
@@ -351,12 +317,12 @@ echo "Thunar set as default file manager."
 echo "[14/14] Cleaning up temporary build directories..."
 # Consolidated cleanup for all temporary directories used during source builds and theme installations
 cleanup_temp_dir "/tmp/swww"
-cleanup_temp_dir "/tmp/hyprpaper_repo" # Changed name to match clone path
+cleanup_temp_dir "/tmp/hyprpaper_repo" # No longer used for hyprpaper, but good to keep for safety if logic changes
 cleanup_temp_dir "/tmp/mpvpaper"
 cleanup_temp_dir "/tmp/swaync"
-cleanup_temp_dir "/tmp/hyprlang_repo" # Added for hyprlang cleanup
-cleanup_temp_dir "/tmp/hyprutils_repo" # Added for hyprutils cleanup
-cleanup_temp_dir "/tmp/hyprgraphics_repo" # Added for hyprgraphics cleanup
+cleanup_temp_dir "/tmp/hyprlang_repo" # No longer manually built, but keep cleanup for safety
+cleanup_temp_dir "/tmp/hyprutils_repo" # No longer manually built, but keep cleanup for safety
+cleanup_temp_dir "/tmp/hyprgraphics_repo" # No longer manually built, but keep cleanup for safety
 cleanup_temp_dir "/tmp/tela"
 cleanup_temp_dir "/tmp/catppuccin"
 echo "Temporary directories cleaned up."
