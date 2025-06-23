@@ -219,7 +219,7 @@ sudo dnf install -y \
     fontconfig \
     dnf-plugins-core \
     hyprland hyprpaper hyprlang hyprutils hyprgraphics \
-    mpvpaper swaync \
+    mpvpaper swaync wlogout \
     waybar cava rofi mpv \
     thunar thunar-archive-plugin mate-polkit \
     sddm swayidle swaylock dmenu \
