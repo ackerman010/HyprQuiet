@@ -34,9 +34,18 @@ sudo dnf install -y \
     sddm swayidle swaylock dmenu \
     git cargo pkgconfig wayland-devel liblz4-devel \
     gtk3 gtk2 libnotify gsettings-desktop-schemas \
-    fontconfig noto-fonts noto-fonts-emoji
+    fontconfig && \
+# 5. Install Google Noto fonts
+sudo dnf install -y \
+    google-noto-sans-fonts \
+    google-noto-emoji-fonts \
+    google-noto-cjk-fonts \
+    google-noto-fonts-all.noarch \
+    google-noto-fonts-all-static.noarch \
+    google-noto-fonts-all-vf.noarch \
+    google-noto-fonts-common.noarch
 
-# 5. Enable and start SDDM Enable and start SDDM
+# 6. Enable and start SDDM Enable and start SDDM Enable and start SDDM
 echo "[5/14] Enabling SDDM display manager..."
 sudo systemctl enable sddm --now
 
