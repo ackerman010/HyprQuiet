@@ -293,7 +293,15 @@ if [ ! -d "/tmp/catppuccin" ]; then
     echo "Error: Failed to clone Catppuccin GTK Theme repository."
     exit 1
 fi
-cd /tmp/catppuccin && ./install.sh mocha
+# Changed to explicitly call the install script with full path and chmod +x
+# Check if install.sh exists and make it executable before running
+if [ -f "/tmp/catppuccin/install.sh" ]; then
+    chmod +x "/tmp/catppuccin/install.sh"
+    "/tmp/catppuccin/install.sh" mocha
+else
+    echo "Error: install.sh not found in /tmp/catppuccin. Manual installation or inspection of Catppuccin GTK theme is required."
+    exit 1
+fi
 cd - > /dev/null # Return to previous directory silently
 echo "Catppuccin GTK theme installed."
 
