@@ -162,6 +162,7 @@ sudo dnf install -y \
     cmake make gcc-c++ \
     wayland-devel lz4-devel wayland-protocols-devel \
     libpng-devel cairo-devel gdk-pixbuf2-devel \
+    file-devel \
     gtk3 gtk2 libnotify gsettings-desktop-schemas \
     fontconfig \
     dnf-plugins-core \
