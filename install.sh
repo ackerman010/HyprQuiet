@@ -48,21 +48,19 @@ echo "Local scripts deployed and made executable in ~/.local/bin/"
 # 4. System update and package installation
 echo "[4/14] Updating system and installing core packages..."
 sudo dnf upgrade -y
-# Corrected package: 'lz4-devel' is the equivalent on Fedora for 'liblz4-devel'
-# Switched 'polkit-gnome' to 'mate-polkit' as requested.
-# Added 'wayland-protocols-devel' to resolve build issues for Wayland-dependent projects.
+# Essential build tools and libraries first
 sudo dnf install -y \
+    git cargo pkgconfig \
+    gcc-c++ \
+    wayland-devel lz4-devel wayland-protocols-devel \
+    gtk3 gtk2 libnotify gsettings-desktop-schemas \
+    fontconfig \
     dnf-plugins-core \
     hyprland \
     waybar cava rofi mpv \
     thunar thunar-archive-plugin mate-polkit \
-    sddm swayidle swaylock dmenu \
-    git cargo pkgconfig wayland-devel lz4-devel wayland-protocols-devel \
-    gtk3 gtk2 libnotify gsettings-desktop-schemas \
-    fontconfig \
-    # Add common development tools that might be needed by cargo builds
-    gcc-c++ # For C++ dependencies
-echo "Core packages installed."
+    sddm swayidle swaylock dmenu
+echo "Core packages and development tools installed."
 
 # 5. Install Google Noto fonts
 echo "[5/14] Installing Google Noto fonts..."
