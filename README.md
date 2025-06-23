@@ -38,7 +38,7 @@ chmod +x install.sh
 ## 🎨 Customization
 
 1. **Colors & Theme**: Edit `~/.config/hypr/hyprland.conf`
-2. **Keybindings**: Update `~/.config/hypr/hyprland.conf`
+2. **Keybindings**: Update `~/.config/hypr/keybinds.conf`
 3. **Animations**: Tweak `swayidle` & `Hyprpaper` settings
 
 > All settings live in `configs/` for easy tweaking.
