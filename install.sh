@@ -169,8 +169,8 @@ fi
 
 # --- PROACTIVE REMOVAL of potentially conflicting older versions from DNF/COPR ---
 # This ensures that our newly installed COPR versions are the ones pkg-config finds.
-echo "--- Proactively removing conflicting Hyprland-related DNF packages (if any) ---"
-# Added mpvpaper and swaync to the removal list as they will now be installed via COPR
+# This step is crucial for preventing conflicts and ensuring the COPR versions are used.
+echo "--- Proactively removing conflicting Hyprland-related DNF packages (if any) to ensure clean install from COPR ---"
 for pkg in hyprlang hyprutils hyprgraphics hyprpaper mpvpaper swaync; do
     if sudo dnf list installed "$pkg" &>/dev/null; then
         echo "Removing conflicting DNF package: $pkg"
@@ -183,7 +183,7 @@ echo "Attempted to remove conflicting Hyprland-related packages."
 
 
 # Essential build tools and libraries for ALL projects (Rust and C++)
-# Now installing hyprlang, hyprutils, hyprgraphics, hyprpaper, mpvpaper, swaync from COPR.
+# Now installing hyprland, hyprpaper, hyprlang, hyprutils, hyprgraphics, mpvpaper, swaync from COPR.
 sudo dnf install -y \
     git cargo pkgconfig \
     cmake make gcc-c++ \
@@ -253,11 +253,9 @@ echo "[10/14] SwayNC handled by DNF/COPR in Step 4."
 
 # 11. Install Nerd Fonts fallback (This section might be problematic due to COPR availability or package names)
 echo "[11/14] Installing Nerd Fonts..."
-# The COPR rmihaylov/nerd-fonts might not always be available or stable.
-# It's generally safer to install specific Nerd Fonts manually or from reliable repos.
-# Keeping it as per your provided script, but with a warning.
-if ! sudo dnf copr enable -y rmihaylov/nerd-fonts; then
-    echo "⚠️ COPR enable failed for rmihaylov/nerd-fonts, skipping Nerd Fonts installation from this COPR."
+# Using the new COPR for Nerd Fonts
+if ! sudo dnf copr enable -y "che/nerd-fonts"; then
+    echo "⚠️ COPR enable failed for 'che/nerd-fonts', skipping Nerd Fonts installation from this COPR."
 else
     sudo dnf install -y nerd-fonts-complete || echo "⚠️ nerd-fonts-complete install failed. You may need to install fonts manually."
 fi
@@ -278,29 +276,42 @@ fi
 # 12. Icon & GTK themes
 echo "[12/14] Installing Tela Circle Dracula and Catppuccin themes..."
 cleanup_temp_dir "/tmp/tela" # Ensure clean slate before cloning
-git clone https://github.com/vinceliuice/Tela-circle-icon-theme.git /tmp/tela
+git clone --depth 1 https://github.com/vinceliuice/Tela-circle-icon-theme.git /tmp/tela
 if [ ! -d "/tmp/tela" ]; then
     echo "Error: Failed to clone Tela Circle Icon Theme repository."
     exit 1
 fi
-cd /tmp/tela && ./install.sh -a
+cd /tmp/tela
+if [ -f "./install.sh" ]; then
+    chmod +x ./install.sh
+    ./install.sh -a
+else
+    echo "Error: Tela Circle Icon Theme install.sh not found. Attempting manual copy."
+    # Fallback to manual copy if install.sh is missing
+    # Assuming standard theme structure where the actual themes are subdirectories
+    find . -maxdepth 2 -type d -name "Tela-circle-dracula*" -exec sudo cp -r {} /usr/share/icons/ \; || { echo "Error: Failed to manually copy Tela-circle-dracula theme."; exit 1; }
+    sudo gtk-update-icon-cache -f -t /usr/share/icons/ || { echo "Warning: Failed to update GTK icon cache for Tela theme."; }
+fi
 cd - > /dev/null # Return to previous directory silently
 echo "Tela Circle Dracula Icons installed."
 
 cleanup_temp_dir "/tmp/catppuccin" # Ensure clean slate before cloning
-git clone https://github.com/catppuccin/gtk.git /tmp/catppuccin
+git clone --depth 1 https://github.com/catppuccin/gtk.git /tmp/catppuccin
 if [ ! -d "/tmp/catppuccin" ]; then
     echo "Error: Failed to clone Catppuccin GTK Theme repository."
     exit 1
 fi
+cd /tmp/catppuccin
 # Changed to explicitly call the install script with full path and chmod +x
 # Check if install.sh exists and make it executable before running
-if [ -f "/tmp/catppuccin/install.sh" ]; then
-    chmod +x "/tmp/catppuccin/install.sh"
-    "/tmp/catppuccin/install.sh" mocha
+if [ -f "./install.sh" ]; then
+    chmod +x "./install.sh"
+    ./install.sh mocha
 else
-    echo "Error: install.sh not found in /tmp/catppuccin. Manual installation or inspection of Catppuccin GTK theme is required."
-    exit 1
+    echo "Error: Catppuccin GTK Theme install.sh not found. Attempting manual copy."
+    # Fallback to manual copy if install.sh is missing
+    # Assuming standard theme structure where the actual theme is a subdirectory
+    find . -maxdepth 2 -type d -name "Catppuccin-Mocha*" -exec sudo cp -r {} /usr/share/themes/ \; || { echo "Error: Failed to manually copy Catppuccin-Mocha theme."; exit 1; }
 fi
 cd - > /dev/null # Return to previous directory silently
 echo "Catppuccin GTK theme installed."
