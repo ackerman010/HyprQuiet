@@ -5,6 +5,11 @@ set -euo pipefail
 # Timestamp for backups
 TS=$(date +"%Y%m%d-%H%M%S")
 
+# --- GLOBAL PKG_CONFIG_PATH SETUP ---
+# Prioritize /usr/local/lib/pkgconfig for source-built libraries
+export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
+echo "Global PKG_CONFIG_PATH set to: $PKG_CONFIG_PATH"
+
 # --- Helper Functions ---
 # Function to check if a command exists
 command_exists() {
@@ -82,6 +87,7 @@ build_and_install_rust_project() {
 }
 
 # Function to build and install C++ projects using CMake
+# This function implicitly uses the globally set PKG_CONFIG_PATH
 build_and_install_cmake_project() {
     local repo_url="$1"
     local temp_path="$2"
@@ -151,21 +157,20 @@ sudo dnf upgrade -y
 
 # Enable Hyprland specific COPR for key packages, essential for hyprland and its devel packages
 echo "--- Ensuring Hyprland COPR repository (atim/hyprland) is enabled ---"
-# Changed COPR to atim/hyprland as agustinesteso/Hyprland might not be available for Fedora 42.
 if ! sudo dnf copr enable -y "atim/hyprland"; then
     echo "Warning: Failed to enable COPR repository 'atim/hyprland'. Hyprland might not be installed with the latest version."
     echo "Proceeding with installation, but some Hyprland components might not compile correctly."
 fi
 
 
-# Essential build tools and libraries
-# Removed hyprland-devel as we will build hyprlang, hyprutils, hyprgraphics explicitly from source.
+# Essential build tools and libraries for ALL projects (Rust and C++)
 sudo dnf install -y \
     git cargo pkgconfig \
     cmake make gcc-c++ \
     wayland-devel lz4-devel wayland-protocols-devel \
     libpng-devel cairo-devel gdk-pixbuf2-devel \
     file-devel \
+    libei-devel libinput-devel \
     gtk3 gtk2 libnotify gsettings-desktop-schemas \
     fontconfig \
     dnf-plugins-core \
@@ -176,29 +181,44 @@ sudo dnf install -y \
     { echo "Error: One or more DNF packages could not be installed. Please check the output above."; exit 1; }
 echo "Core packages and development tools installed."
 
+# --- PROACTIVE REMOVAL of potentially conflicting older versions from DNF/COPR ---
+# This ensures that our source-built versions are the ones pkg-config finds.
+echo "--- Proactively removing conflicting Hyprland-related DNF packages (if any) ---"
+# Use 'dnf list installed' and grep to remove only if explicitly installed, to avoid errors for non-existent packages
+for pkg in hyprlang hyprutils hyprgraphics; do
+    if sudo dnf list installed "$pkg" &>/dev/null; then
+        echo "Removing conflicting DNF package: $pkg"
+        sudo dnf remove -y "$pkg" || true # Use || true to prevent script exit if removal fails for non-critical reasons
+    else
+        echo "Conflicting DNF package $pkg not found, skipping removal."
+    fi
+done
+echo "Attempted to remove conflicting Hyprland-related packages."
+
+
 # --- Install Hyprland related libraries from source ---
 # These are critical steps to ensure dependencies like hyprlang, hyprgraphics are the correct versions.
 # We will always build these from source to guarantee the latest compatible versions.
+# The order here is important due to dependencies (hyprgraphics depends on hyprlang/hyprutils, hyprpaper depends on all three).
 
-echo "[4.1/14] Installing hyprlang from source..."
-# Check if hyprlang is installed and if it meets the minimum required version (now checking for 0.7.1 as per error)
-if ! pkg-config --exists hyprlang || ! pkg-config --atleast-version=0.7.1 hyprlang; then
+echo "[4.1/14] Installing hyprlang from source (ensuring latest compatible version)..."
+# Force build if pkg-config cannot find hyprlang >= 0.7.1
+if ! pkg-config --exists "hyprlang >= 0.7.1"; then
     build_and_install_cmake_project "https://github.com/hyprwm/hyprlang.git" "/tmp/hyprlang_repo" "hyprlang"
 else
     echo "hyprlang (>=0.7.1) already installed and meets version requirements, skipping source build."
 fi
 
-echo "[4.2/14] Installing hyprutils from source..."
-# Check if hyprutils is installed and if it meets the minimum required version (now checking for 0.7.1 as per hyprlang requirement)
-# This will force a rebuild if the existing version is < 0.7.1
-if ! pkg-config --exists hyprutils || ! pkg-config --atleast-version=0.7.1 hyprutils; then
+echo "[4.2/14] Installing hyprutils from source (ensuring latest compatible version)..."
+# Force build if pkg-config cannot find hyprutils >= 0.7.1
+if ! pkg-config --exists "hyprutils >= 0.7.1"; then
     build_and_install_cmake_project "https://github.com/hyprwm/hyprutils.git" "/tmp/hyprutils_repo" "hyprutils"
 else
     echo "hyprutils (>=0.7.1) already installed and meets version requirements, skipping source build."
 fi
 
-echo "[4.3/14] Installing hyprgraphics from source..."
-# Check if hyprgraphics is installed
+echo "[4.3/14] Installing hyprgraphics from source (ensuring latest compatible version)..."
+# Force build if pkg-config cannot find hyprgraphics
 if ! pkg-config --exists hyprgraphics; then
     build_and_install_cmake_project "https://github.com/hyprwm/hyprgraphics.git" "/tmp/hyprgraphics_repo" "hyprgraphics"
 else
