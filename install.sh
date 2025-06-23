@@ -81,6 +81,42 @@ build_and_install_rust_project() {
     echo "$bin_name installed from source."
 }
 
+# Function to build and install C++ projects using CMake
+build_and_install_cmake_project() {
+    local repo_url="$1"
+    local temp_path="$2"
+    local bin_name="$3" # Optional: The main binary name if different from repo name
+
+    echo "Building and installing $bin_name from source using cmake/make..."
+    cleanup_temp_dir "$temp_path" # Ensure clean slate before cloning
+
+    git clone "$repo_url" "$temp_path"
+    if [ ! -d "$temp_path" ]; then
+        echo "Error: Failed to clone $bin_name repository from $repo_url."
+        exit 1
+    fi
+
+    local current_dir="$PWD"
+    cd "$temp_path"
+
+    cmake -Bbuild
+    cmake --build build
+    sudo cmake --install build
+    
+    # Optionally install the specific binary if it's not handled by cmake --install or if it's named differently
+    # This assumes the bin_name is the target name in the CMakeLists.txt that gets compiled.
+    # For projects that install properly with cmake --install, this might be redundant.
+    # if [ -f "build/$bin_name" ]; then # Check in the build directory
+    #     sudo install -Dm755 "build/$bin_name" "/usr/local/bin/$bin_name"
+    # elif [ -f "build/src/$bin_name" ]; then # Check in a common src subdir within build
+    #     sudo install -Dm755 "build/src/$bin_name" "/usr/local/bin/$bin_name"
+    # fi
+
+
+    cd "$current_dir" > /dev/null # Return to original directory
+    echo "$bin_name installed from source using cmake/make."
+}
+
 
 # --- Main Script Execution ---
 
@@ -116,17 +152,16 @@ echo "--- Ensuring Hyprland COPR repository (atim/hyprland) is enabled ---"
 # Changed COPR to atim/hyprland as agustinesteso/Hyprland might not be available for Fedora 42.
 if ! sudo dnf copr enable -y "atim/hyprland"; then
     echo "Warning: Failed to enable COPR repository 'atim/hyprland'. Hyprland and related devel packages might not be found."
+    echo "Proceeding with installation, but some Hyprland components might not compile correctly."
 fi
 
 
 # Essential build tools and libraries
-# Corrected syntax for multi-line DNF install to avoid "syntax error near unexpected token 'gtk3'"
 sudo dnf install -y \
     git cargo pkgconfig \
     cmake make gcc-c++ \
     wayland-devel lz4-devel wayland-protocols-devel \
     libpng-devel cairo-devel gdk-pixbuf2-devel \
-    hyprland-devel \
     gtk3 gtk2 libnotify gsettings-desktop-schemas \
     fontconfig \
     dnf-plugins-core \
@@ -136,6 +171,32 @@ sudo dnf install -y \
     sddm swayidle swaylock dmenu || \
     { echo "Error: One or more DNF packages could not be installed. Please check the output above."; exit 1; }
 echo "Core packages and development tools installed."
+
+# --- Install Hyprland related libraries from source if DNF/COPR issues persist ---
+# This is a critical step to ensure dependencies like hyprlang, hyprgraphics are the correct versions.
+# The `hyprland-devel` package should ideally provide these, but if it's outdated or missing,
+# we need to build them from source before hyprpaper.
+
+echo "[4.1/14] Installing hyprlang from source..."
+if ! pkg-config --exists hyprlang && ! pkg-config --atleast-version=0.6.0 hyprlang; then
+    build_and_install_cmake_project "https://github.com/hyprwm/hyprlang.git" "/tmp/hyprlang_repo" "hyprlang"
+else
+    echo "hyprlang (>=0.6.0) already installed, skipping source build."
+fi
+
+echo "[4.2/14] Installing hyprutils from source (if needed by hyprgraphics/hyprpaper)..."
+if ! pkg-config --exists hyprutils && ! pkg-config --atleast-version=0.2.4 hyprutils; then
+    build_and_install_cmake_project "https://github.com/hyprwm/hyprutils.git" "/tmp/hyprutils_repo" "hyprutils"
+else
+    echo "hyprutils (>=0.2.4) already installed, skipping source build."
+fi
+
+echo "[4.3/14] Installing hyprgraphics from source..."
+if ! pkg-config --exists hyprgraphics; then
+    build_and_install_cmake_project "https://github.com/hyprwm/hyprgraphics.git" "/tmp/hyprgraphics_repo" "hyprgraphics"
+else
+    echo "hyprgraphics already installed, skipping source build."
+fi
 
 # 5. Install Google Noto fonts
 echo "[5/14] Installing Google Noto fonts..."
@@ -176,20 +237,8 @@ if ! command_exists hyprpaper; then
         echo "Hyprpaper installed successfully via DNF."
     else
         echo "Hyprpaper not found in DNF, building from source using cmake/make..."
-        cleanup_temp_dir "/tmp/hyprpaper_repo" # Ensure clean slate before cloning
-        git clone https://github.com/hyprwm/hyprpaper.git "/tmp/hyprpaper_repo"
-        if [ ! -d "/tmp/hyprpaper_repo" ]; then
-            echo "Error: Failed to clone Hyprpaper repository."
-            exit 1
-        fi
-        # 'current_dir' is already declared in the main script scope.
-        current_dir="$PWD"
-        cd "/tmp/hyprpaper_repo"
-        cmake -Bbuild
-        cmake --build build
-        sudo cmake --install build
-        cd "$current_dir" > /dev/null # Return to original directory
-        echo "Hyprpaper installed from source using cmake/make."
+        # Using the new general build_and_install_cmake_project function
+        build_and_install_cmake_project "https://github.com/hyprwm/hyprpaper.git" "/tmp/hyprpaper_repo" "hyprpaper"
     fi
 else
     echo "Hyprpaper already installed, skipping installation."
@@ -278,6 +327,9 @@ cleanup_temp_dir "/tmp/swww"
 cleanup_temp_dir "/tmp/hyprpaper_repo" # Changed name to match clone path
 cleanup_temp_dir "/tmp/mpvpaper"
 cleanup_temp_dir "/tmp/swaync"
+cleanup_temp_dir "/tmp/hyprlang_repo" # Added for hyprlang cleanup
+cleanup_temp_dir "/tmp/hyprutils_repo" # Added for hyprutils cleanup
+cleanup_temp_dir "/tmp/hyprgraphics_repo" # Added for hyprgraphics cleanup
 cleanup_temp_dir "/tmp/tela"
 cleanup_temp_dir "/tmp/catppuccin"
 echo "Temporary directories cleaned up."
