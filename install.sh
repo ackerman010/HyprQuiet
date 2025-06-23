@@ -25,9 +25,6 @@ build_and_install_rust_project() {
     local repo_url="$1"
     local temp_path="$2"
     local bin_name="$3"
-    # custom_cd_path is no longer directly used as a hardcoded path for cd,
-    # but could be used to hint a starting point for find or for specific cases.
-    # For now, we'll search the entire cloned repo.
 
     echo "Building and installing $bin_name from source..."
     cleanup_temp_dir "$temp_path" # Ensure clean slate before cloning
@@ -41,18 +38,33 @@ build_and_install_rust_project() {
     local current_dir="$PWD"
     cd "$temp_path"
 
-    # Smart way: Find Cargo.toml in the cloned repository
-    # Limiting depth for performance; adjust if your project nests deeper
-    local cargo_toml_dir=$(find . -type f -name "Cargo.toml" -print -quit | xargs dirname)
+    local cargo_toml_path=""
 
-    if [ -z "$cargo_toml_dir" ] || [ ! -f "$cargo_toml_dir/Cargo.toml" ]; then
-        echo "Error: Cargo.toml not found in any subdirectory of $temp_path. Cannot build $bin_name. Please check the repository structure."
+    # Attempt 1: Check if Cargo.toml is in the root of the cloned directory
+    if [ -f "Cargo.toml" ]; then
+        cargo_toml_path="."
+    # Attempt 2: Check for a common subdirectory named after the binary
+    elif [ -f "$bin_name/Cargo.toml" ]; then
+        cargo_toml_path="$bin_name"
+    # Attempt 3: More comprehensive search, limiting depth
+    else
+        # Use -maxdepth to prevent 'dirname: missing operand' if nothing found
+        # This will return "path/to/Cargo.toml" or nothing if not found.
+        cargo_toml_path=$(find . -maxdepth 2 -type f -name "Cargo.toml" -print -quit | xargs dirname || echo "")
+        # If still empty, try deeper but less common paths
+        if [ -z "$cargo_toml_path" ]; then
+             cargo_toml_path=$(find . -maxdepth 3 -type f -name "Cargo.toml" -print -quit | xargs dirname || echo "")
+        fi
+    fi
+
+    if [ -z "$cargo_toml_path" ] || [ ! -f "$cargo_toml_path/Cargo.toml" ]; then
+        echo "Error: Cargo.toml not found in any common or easily discoverable subdirectory of $temp_path. Cannot build $bin_name. Please check the repository structure manually."
         cd "$current_dir" > /dev/null # Return to original directory before exiting
         exit 1
     fi
 
-    echo "Found Cargo.toml in: $temp_path/$cargo_toml_dir. Changing directory..."
-    cd "$cargo_toml_dir"
+    echo "Found Cargo.toml in: $temp_path/$cargo_toml_path. Changing directory..."
+    cd "$cargo_toml_path"
 
     cargo build --release
     sudo install -Dm755 "target/release/$bin_name" "/usr/local/bin/$bin_name"
@@ -134,7 +146,6 @@ echo "SDDM enabled and started."
 # 7. Install swww wallpaper daemon
 echo "[7/14] Installing swww from source..."
 if ! command_exists swww; then
-    # Removed custom_cd_path, letting the function discover Cargo.toml
     build_and_install_rust_project "https://github.com/LGFae/swww.git" "/tmp/swww" "swww"
 else
     echo "swww already installed, skipping source build."
@@ -148,7 +159,6 @@ if ! command_exists hyprpaper; then
         echo "Hyprpaper installed successfully via DNF."
     else
         echo "Hyprpaper not found in DNF, attempting to build from source..."
-        # Removed hardcoded custom_cd_path, letting the function discover Cargo.toml
         build_and_install_rust_project "https://github.com/hyprwm/Hyprpaper.git" "/tmp/hyprpaper_repo" "hyprpaper"
     fi
 else
@@ -158,7 +168,6 @@ fi
 # 9. Install Mpvpaper
 echo "[9/14] Installing mpvpaper wallpaper sequencer..."
 if ! command_exists mpvpaper; then
-    # Removed custom_cd_path, letting the function discover Cargo.toml
     build_and_install_rust_project "https://github.com/LGFae/mpvpaper.git" "/tmp/mpvpaper" "mpvpaper"
 else
     echo "mpvpaper already installed, skipping source build."
@@ -167,7 +176,6 @@ fi
 # 10. Install SwayNC
 echo "[10/14] Installing SwayNC notification daemon..."
 if ! command_exists swync; then
-    # Removed custom_cd_path, letting the function discover Cargo.toml
     build_and_install_rust_project "https://github.com/Twnmt/SwayNC.git" "/tmp/swaync" "swaync"
 else
     echo "SwayNC already installed, skipping source build."
