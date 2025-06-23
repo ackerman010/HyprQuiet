@@ -116,6 +116,8 @@ sudo dnf install -y \
     cmake make gcc-c++ \
     wayland-devel lz4-devel wayland-protocols-devel \
     libpng-devel cairo-devel gdk-pixbuf2-devel \
+    # Added hyprland-devel to ensure hyprwayland-scanner components are available for hyprpaper
+    hyprland-devel \
     gtk3 gtk2 libnotify gsettings-desktop-schemas \
     fontconfig \
     dnf-plugins-core \
@@ -170,7 +172,6 @@ if ! command_exists hyprpaper; then
             echo "Error: Failed to clone Hyprpaper repository."
             exit 1
         fi
-        # Remove 'local' keyword here, as it's not in a function scope.
         # 'current_dir' is already declared in the main script scope.
         current_dir="$PWD"
         cd "/tmp/hyprpaper_repo"
