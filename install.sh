@@ -20,7 +20,7 @@ cleanup_temp_dir() {
     fi
 }
 
-# Function to build and install Rust projects from source, with dynamic Cargo.toml discovery
+# Function to build and install Rust projects from source, with a more direct Cargo.toml discovery
 build_and_install_rust_project() {
     local repo_url="$1"
     local temp_path="$2"
@@ -38,33 +38,35 @@ build_and_install_rust_project() {
     local current_dir="$PWD"
     cd "$temp_path"
 
-    local cargo_toml_path=""
+    local build_dir="." # Default to the root of the cloned repo
 
-    # Attempt 1: Check if Cargo.toml is in the root of the cloned directory
-    if [ -f "Cargo.toml" ]; then
-        cargo_toml_path="."
-    # Attempt 2: Check for a common subdirectory named after the binary
-    elif [ -f "$bin_name/Cargo.toml" ]; then
-        cargo_toml_path="$bin_name"
-    # Attempt 3: More comprehensive search, limiting depth
+    # Check for Cargo.toml in common locations
+    if [ -f "./Cargo.toml" ]; then
+        build_dir="."
+    elif [ -f "$bin_name/Cargo.toml" ]; then # E.g., repo/hyprpaper/Cargo.toml
+        build_dir="$bin_name"
+    elif [ -f "src/Cargo.toml" ]; then # E.g., repo/src/Cargo.toml (less common for main project)
+        build_dir="src"
     else
-        # Use -maxdepth to prevent 'dirname: missing operand' if nothing found
-        # This will return "path/to/Cargo.toml" or nothing if not found.
-        cargo_toml_path=$(find . -maxdepth 2 -type f -name "Cargo.toml" -print -quit | xargs dirname || echo "")
-        # If still empty, try deeper but less common paths
-        if [ -z "$cargo_toml_path" ]; then
-             cargo_toml_path=$(find . -maxdepth 3 -type f -name "Cargo.toml" -print -quit | xargs dirname || echo "")
+        echo "Warning: Cargo.toml not found in common locations (root or '$bin_name/' or 'src/')."
+        echo "Attempting to find it, but this might indicate an unusual repository structure for $bin_name."
+        # Fallback to a broader find if the above direct checks fail.
+        # Use -maxdepth to avoid issues with dirname if nothing is found.
+        # This will return the path relative to the current directory (temp_path).
+        local found_path=$(find . -maxdepth 3 -type f -name "Cargo.toml" -print -quit 2>/dev/null | xargs dirname || echo "")
+        if [ -n "$found_path" ]; then
+            build_dir="$found_path"
+            echo "Found Cargo.toml at: $build_dir"
+        else
+            echo "Error: Cargo.toml not found in any discoverable subdirectory of $temp_path for $bin_name."
+            echo "Cannot build. Please manually check the repository '$repo_url' for the correct Cargo.toml location."
+            cd "$current_dir" > /dev/null # Return to original directory before exiting
+            exit 1
         fi
     fi
 
-    if [ -z "$cargo_toml_path" ] || [ ! -f "$cargo_toml_path/Cargo.toml" ]; then
-        echo "Error: Cargo.toml not found in any common or easily discoverable subdirectory of $temp_path. Cannot build $bin_name. Please check the repository structure manually."
-        cd "$current_dir" > /dev/null # Return to original directory before exiting
-        exit 1
-    fi
-
-    echo "Found Cargo.toml in: $temp_path/$cargo_toml_path. Changing directory..."
-    cd "$cargo_toml_path"
+    echo "Changing directory to $temp_path/$build_dir for building..."
+    cd "$build_dir"
 
     cargo build --release
     sudo install -Dm755 "target/release/$bin_name" "/usr/local/bin/$bin_name"
@@ -146,6 +148,7 @@ echo "SDDM enabled and started."
 # 7. Install swww wallpaper daemon
 echo "[7/14] Installing swww from source..."
 if ! command_exists swww; then
+    # No specific custom_cd_path; dynamic discovery will handle.
     build_and_install_rust_project "https://github.com/LGFae/swww.git" "/tmp/swww" "swww"
 else
     echo "swww already installed, skipping source build."
@@ -159,6 +162,7 @@ if ! command_exists hyprpaper; then
         echo "Hyprpaper installed successfully via DNF."
     else
         echo "Hyprpaper not found in DNF, attempting to build from source..."
+        # No specific custom_cd_path; dynamic discovery will handle.
         build_and_install_rust_project "https://github.com/hyprwm/Hyprpaper.git" "/tmp/hyprpaper_repo" "hyprpaper"
     fi
 else
@@ -168,6 +172,7 @@ fi
 # 9. Install Mpvpaper
 echo "[9/14] Installing mpvpaper wallpaper sequencer..."
 if ! command_exists mpvpaper; then
+    # No specific custom_cd_path; dynamic discovery will handle.
     build_and_install_rust_project "https://github.com/LGFae/mpvpaper.git" "/tmp/mpvpaper" "mpvpaper"
 else
     echo "mpvpaper already installed, skipping source build."
@@ -176,6 +181,7 @@ fi
 # 10. Install SwayNC
 echo "[10/14] Installing SwayNC notification daemon..."
 if ! command_exists swync; then
+    # No specific custom_cd_path; dynamic discovery will handle.
     build_and_install_rust_project "https://github.com/Twnmt/SwayNC.git" "/tmp/swaync" "swaync"
 else
     echo "SwayNC already installed, skipping source build."
