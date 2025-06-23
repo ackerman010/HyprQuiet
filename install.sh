@@ -110,14 +110,22 @@ echo "Local scripts deployed and made executable in ~/.local/bin/"
 # 4. System update and package installation
 echo "[4/14] Updating system and installing core packages..."
 sudo dnf upgrade -y
-# Essential build tools and libraries first
+
+# Enable Hyprland specific COPRs for key packages first, as hyprland-devel might be here
+echo "--- Ensuring Hyprland COPR repository is enabled ---"
+# This COPR often contains hyprland and its development packages.
+if ! sudo dnf copr enable -y "agustinesteso/Hyprland"; then
+    echo "Warning: Failed to enable COPR repository 'agustinesteso/Hyprland'. Hyprland and related devel packages might not be found."
+fi
+
+
+# Essential build tools and libraries
 sudo dnf install -y \
     git cargo pkgconfig \
     cmake make gcc-c++ \
     wayland-devel lz4-devel wayland-protocols-devel \
     libpng-devel cairo-devel gdk-pixbuf2-devel \
-    # Added hyprland-devel to ensure hyprwayland-scanner components are available for hyprpaper
-    hyprland-devel \
+    hyprland-devel || { echo "Warning: hyprland-devel package could not be installed. This might affect hyprpaper compilation."; } \
     gtk3 gtk2 libnotify gsettings-desktop-schemas \
     fontconfig \
     dnf-plugins-core \
