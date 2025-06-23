@@ -14,7 +14,6 @@
 * **Minimalist Aesthetic**: Clean, modern design with subtle animations.
 * **Custom Keybindings**: Intuitive shortcuts for maximum productivity.
 * **Fluid Workspaces**: Effortlessly organize and navigate windows.
-* **Easy Theming**: Change colors, fonts, and layouts in seconds.
 
 ---
 
