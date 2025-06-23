@@ -28,13 +28,14 @@ echo "[4/14] Updating system and installing core packages..."
 sudo dnf upgrade -y
 # Corrected package: 'lz4-devel' is the equivalent on Fedora for 'liblz4-devel'
 # Switched 'polkit-gnome' to 'mate-polkit' as requested.
+# Added 'wayland-protocols-devel' to resolve build issues for Wayland-dependent projects.
 sudo dnf install -y \
     dnf-plugins-core \
     hyprland \
     waybar cava rofi mpv \
     thunar thunar-archive-plugin mate-polkit \
     sddm swayidle swaylock dmenu \
-    git cargo pkgconfig wayland-devel lz4-devel \
+    git cargo pkgconfig wayland-devel lz4-devel wayland-protocols-devel \
     gtk3 gtk2 libnotify gsettings-desktop-schemas \
     fontconfig
 
