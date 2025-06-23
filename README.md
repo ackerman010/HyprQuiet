@@ -5,7 +5,7 @@
 ---
 
 <div align="center">
-  <img src=["[.github/preview.png](https://github.com/ackerman010/HyprQuiet/blob/main/config/image.png?raw=true)" alt="[HyprQuiet Preview]" width="600" ](https://github.com/ackerman010/HyprQuiet/blob/main/config/image.png?raw=true)/>
+  <img src="https://github.com/ackerman010/HyprQuiet/blob/main/config/image.png?raw=true" alt="HyprQuiet Preview" width="600" />
 </div>
 
 ## 🚀 Features
