@@ -35,8 +35,6 @@ chmod +x install.sh
 
 > *Installer will back up your existing config and apply the HyprQuiet setup seamlessly.*
 
----
-
 ## 🎨 Customization
 
 1. **Colors & Theme**: Edit `~/.config/hypr/hyprland.conf`
