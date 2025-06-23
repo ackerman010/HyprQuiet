@@ -99,19 +99,21 @@ build_and_install_cmake_project() {
     local current_dir="$PWD"
     cd "$temp_path"
 
-    cmake -Bbuild
-    cmake --build build
-    sudo cmake --install build
-    
-    # Optionally install the specific binary if it's not handled by cmake --install or if it's named differently
-    # This assumes the bin_name is the target name in the CMakeLists.txt that gets compiled.
-    # For projects that install properly with cmake --install, this might be redundant.
-    # if [ -f "build/$bin_name" ]; then # Check in the build directory
-    #     sudo install -Dm755 "build/$bin_name" "/usr/local/bin/$bin_name"
-    # elif [ -f "build/src/$bin_name" ]; then # Check in a common src subdir within build
-    #     sudo install -Dm755 "build/src/$bin_name" "/usr/local/bin/$bin_name"
-    # fi
+    # For cmake projects that might need to be built in a 'build' subdirectory
+    mkdir -p build
+    cd build
 
+    cmake .. # Configure from parent directory
+    cmake --build .
+    sudo cmake --install .
+    
+    # Optional manual install if cmake --install doesn't place it correctly
+    # For projects that install properly with cmake --install, this might be redundant.
+    # if [ -f "./$bin_name" ]; then # Check in the current build directory
+    #     sudo install -Dm755 "./$bin_name" "/usr/local/bin/$bin_name"
+    # elif [ -f "../src/$bin_name" ]; then # Check in a common src subdir within parent
+    #     sudo install -Dm755 "../src/$bin_name" "/usr/local/bin/$bin_name"
+    # fi
 
     cd "$current_dir" > /dev/null # Return to original directory
     echo "$bin_name installed from source using cmake/make."
@@ -151,12 +153,13 @@ sudo dnf upgrade -y
 echo "--- Ensuring Hyprland COPR repository (atim/hyprland) is enabled ---"
 # Changed COPR to atim/hyprland as agustinesteso/Hyprland might not be available for Fedora 42.
 if ! sudo dnf copr enable -y "atim/hyprland"; then
-    echo "Warning: Failed to enable COPR repository 'atim/hyprland'. Hyprland and related devel packages might not be found."
+    echo "Warning: Failed to enable COPR repository 'atim/hyprland'. Hyprland might not be installed with the latest version."
     echo "Proceeding with installation, but some Hyprland components might not compile correctly."
 fi
 
 
 # Essential build tools and libraries
+# Removed hyprland-devel as we will build hyprlang, hyprutils, hyprgraphics explicitly from source.
 sudo dnf install -y \
     git cargo pkgconfig \
     cmake make gcc-c++ \
@@ -173,26 +176,28 @@ sudo dnf install -y \
     { echo "Error: One or more DNF packages could not be installed. Please check the output above."; exit 1; }
 echo "Core packages and development tools installed."
 
-# --- Install Hyprland related libraries from source if DNF/COPR issues persist ---
-# This is a critical step to ensure dependencies like hyprlang, hyprgraphics are the correct versions.
-# The `hyprland-devel` package should ideally provide these, but if it's outdated or missing,
-# we need to build them from source before hyprpaper.
+# --- Install Hyprland related libraries from source ---
+# These are critical steps to ensure dependencies like hyprlang, hyprgraphics are the correct versions.
+# We will always build these from source to guarantee the latest compatible versions.
 
 echo "[4.1/14] Installing hyprlang from source..."
-if ! pkg-config --exists hyprlang && ! pkg-config --atleast-version=0.6.0 hyprlang; then
+# Check if hyprlang is installed and if it meets the minimum required version
+if ! pkg-config --exists hyprlang || ! pkg-config --atleast-version=0.6.0 hyprlang; then
     build_and_install_cmake_project "https://github.com/hyprwm/hyprlang.git" "/tmp/hyprlang_repo" "hyprlang"
 else
-    echo "hyprlang (>=0.6.0) already installed, skipping source build."
+    echo "hyprlang (>=0.6.0) already installed and meets version requirements, skipping source build."
 fi
 
-echo "[4.2/14] Installing hyprutils from source (if needed by hyprgraphics/hyprpaper)..."
-if ! pkg-config --exists hyprutils && ! pkg-config --atleast-version=0.2.4 hyprutils; then
+echo "[4.2/14] Installing hyprutils from source..."
+# Check if hyprutils is installed and if it meets the minimum required version
+if ! pkg-config --exists hyprutils || ! pkg-config --atleast-version=0.2.4 hyprutils; then
     build_and_install_cmake_project "https://github.com/hyprwm/hyprutils.git" "/tmp/hyprutils_repo" "hyprutils"
 else
-    echo "hyprutils (>=0.2.4) already installed, skipping source build."
+    echo "hyprutils (>=0.2.4) already installed and meets version requirements, skipping source build."
 fi
 
 echo "[4.3/14] Installing hyprgraphics from source..."
+# Check if hyprgraphics is installed
 if ! pkg-config --exists hyprgraphics; then
     build_and_install_cmake_project "https://github.com/hyprwm/hyprgraphics.git" "/tmp/hyprgraphics_repo" "hyprgraphics"
 else
