@@ -27,7 +27,7 @@ cleanup_temp_dir() {
 }
 
 # Function to build and install Rust projects from source, with a more direct Cargo.toml discovery
-# This function is now specifically for swww, mpvpaper, and swaync.
+# This function is now specifically for swww, as others are moving to COPR.
 build_and_install_rust_project() {
     local repo_url="$1"
     local temp_path="$2"
@@ -36,9 +36,14 @@ build_and_install_rust_project() {
     echo "Building and installing $bin_name from source..."
     cleanup_temp_dir "$temp_path" # Ensure clean slate before cloning
 
-    git clone "$repo_url" "$temp_path"
+    # Use --depth 1 for faster and potentially more reliable cloning of public repos
+    git clone --depth 1 "$repo_url" "$temp_path"
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to clone $bin_name repository from $repo_url. Git clone failed."
+        exit 1
+    fi
     if [ ! -d "$temp_path" ]; then
-        echo "Error: Failed to clone $bin_name repository from $repo_url."
+        echo "Error: Cloned $bin_name repository directory $temp_path does not exist."
         exit 1
     fi
 
@@ -97,9 +102,14 @@ build_and_install_cmake_project() {
     echo "Building and installing $bin_name from source using cmake/make..."
     cleanup_temp_dir "$temp_path" # Ensure clean slate before cloning
 
-    git clone "$repo_url" "$temp_path"
+    # Use --depth 1 for faster and potentially more reliable cloning of public repos
+    git clone --depth 1 "$repo_url" "$temp_path"
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to clone $bin_name repository from $repo_url. Git clone failed."
+        exit 1
+    fi
     if [ ! -d "$temp_path" ]; then
-        echo "Error: Failed to clone $bin_name repository from $repo_url."
+        echo "Error: Cloned $bin_name repository directory $temp_path does not exist."
         exit 1
     fi
 
@@ -160,7 +170,8 @@ fi
 # --- PROACTIVE REMOVAL of potentially conflicting older versions from DNF/COPR ---
 # This ensures that our newly installed COPR versions are the ones pkg-config finds.
 echo "--- Proactively removing conflicting Hyprland-related DNF packages (if any) ---"
-for pkg in hyprlang hyprutils hyprgraphics hyprpaper; do
+# Added mpvpaper and swaync to the removal list as they will now be installed via COPR
+for pkg in hyprlang hyprutils hyprgraphics hyprpaper mpvpaper swaync; do
     if sudo dnf list installed "$pkg" &>/dev/null; then
         echo "Removing conflicting DNF package: $pkg"
         sudo dnf remove -y "$pkg" || true # Use || true to prevent script exit if removal fails for non-critical reasons
@@ -172,7 +183,7 @@ echo "Attempted to remove conflicting Hyprland-related packages."
 
 
 # Essential build tools and libraries for ALL projects (Rust and C++)
-# Now installing hyprlang, hyprutils, hyprgraphics, hyprpaper from COPR.
+# Now installing hyprlang, hyprutils, hyprgraphics, hyprpaper, mpvpaper, swaync from COPR.
 sudo dnf install -y \
     git cargo pkgconfig \
     cmake make gcc-c++ \
@@ -184,13 +195,14 @@ sudo dnf install -y \
     fontconfig \
     dnf-plugins-core \
     hyprland hyprpaper hyprlang hyprutils hyprgraphics \
+    mpvpaper swaync \
     waybar cava rofi mpv \
     thunar thunar-archive-plugin mate-polkit \
     sddm swayidle swaylock dmenu || \
     { echo "Error: One or more DNF packages could not be installed. Please check the output above."; exit 1; }
 echo "Core packages and development tools installed."
 
-# --- Removed manual source builds for hyprlang, hyprutils, hyprgraphics, and hyprpaper ---
+# --- Removed manual source builds for hyprlang, hyprutils, hyprgraphics, hyprpaper, mpvpaper, and swaync ---
 # These are now expected to be installed via the solopasha/hyprland COPR in the main dnf install step.
 
 # 5. Install Google Noto fonts
@@ -225,35 +237,19 @@ else
     echo "swww already installed, skipping source build."
 fi
 
-# 8. Install Hyprpaper (This step is now mostly handled by DNF/COPR)
-echo "[8/14] Installing Hyprpaper wallpaper tool (via DNF/COPR)---"
-if ! command_exists hyprpaper; then
-    echo "Hyprpaper was not installed by DNF/COPR in step 4. This indicates an issue with the COPR or package name."
-    echo "Please check the COPR setup or manually install hyprpaper."
-    exit 1 # Exit if hyprpaper is still not installed, as it's a core requirement.
-else
-    echo "Hyprpaper installed, skipping further action."
-fi
+# 8. Removed Hyprpaper specific install logic. It's now part of step 4 DNF install.
+# Keeping the numbering for consistency with other steps.
+echo "[8/14] Hyprpaper and related Hyprland components handled by DNF/COPR in Step 4."
 
-# 9. Install Mpvpaper
-echo "[9/14] Installing mpvpaper wallpaper sequencer..."
-# mpvpaper is generally not in Hyprland COPRs, so keeping source build for it.
-if ! command_exists mpvpaper; then
-    # No specific custom_cd_path; dynamic discovery will handle.
-    build_and_install_rust_project "https://github.com/LGFae/mpvpaper.git" "/tmp/mpvpaper" "mpvpaper"
-else
-    echo "mpvpaper already installed, skipping source build."
-fi
 
-# 10. Install SwayNC
-echo "[10/14] Installing SwayNC notification daemon..."
-# SwayNC is generally not in Hyprland COPRs, so keeping source build for it.
-if ! command_exists swync; then
-    # No specific custom_cd_path; dynamic discovery will handle.
-    build_and_install_rust_project "https://github.com/Twnmt/SwayNC.git" "/tmp/swaync" "swaync"
-else
-    echo "SwayNC already installed, skipping source build."
-fi
+# 9. Removed Mpvpaper specific install logic. It's now part of step 4 DNF install.
+# Keeping the numbering for consistency with other steps.
+echo "[9/14] Mpvpaper handled by DNF/COPR in Step 4."
+
+
+# 10. Removed SwayNC specific install logic. It's now part of step 4 DNF install.
+# Keeping the numbering for consistency with other steps.
+echo "[10/14] SwayNC handled by DNF/COPR in Step 4."
 
 # 11. Install Nerd Fonts fallback (This section might be problematic due to COPR availability or package names)
 echo "[11/14] Installing Nerd Fonts..."
@@ -317,12 +313,7 @@ echo "Thunar set as default file manager."
 echo "[14/14] Cleaning up temporary build directories..."
 # Consolidated cleanup for all temporary directories used during source builds and theme installations
 cleanup_temp_dir "/tmp/swww"
-cleanup_temp_dir "/tmp/hyprpaper_repo" # No longer used for hyprpaper, but good to keep for safety if logic changes
-cleanup_temp_dir "/tmp/mpvpaper"
-cleanup_temp_dir "/tmp/swaync"
-cleanup_temp_dir "/tmp/hyprlang_repo" # No longer manually built, but keep cleanup for safety
-cleanup_temp_dir "/tmp/hyprutils_repo" # No longer manually built, but keep cleanup for safety
-cleanup_temp_dir "/tmp/hyprgraphics_repo" # No longer manually built, but keep cleanup for safety
+# Removed specific cleanup for repos no longer source-built
 cleanup_temp_dir "/tmp/tela"
 cleanup_temp_dir "/tmp/catppuccin"
 echo "Temporary directories cleaned up."
