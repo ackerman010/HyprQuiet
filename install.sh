@@ -21,6 +21,7 @@ cleanup_temp_dir() {
 }
 
 # Function to build and install Rust projects from source, with a more direct Cargo.toml discovery
+# This function is used for swww, mpvpaper, and swaync, which are Rust-based.
 build_and_install_rust_project() {
     local repo_url="$1"
     local temp_path="$2"
@@ -169,7 +170,9 @@ if ! command_exists hyprpaper; then
             echo "Error: Failed to clone Hyprpaper repository."
             exit 1
         fi
-        local current_dir="$PWD"
+        # Remove 'local' keyword here, as it's not in a function scope.
+        # 'current_dir' is already declared in the main script scope.
+        current_dir="$PWD"
         cd "/tmp/hyprpaper_repo"
         cmake -Bbuild
         cmake --build build
