@@ -17,7 +17,7 @@
 
 ---
 
-## ⚙️ Installation
+## ⚙️ Fedora Installation
 
 ```bash
 # 1. Clone the repository
