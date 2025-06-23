@@ -57,6 +57,3 @@ chmod +x install.sh
 
 Feel free to open issues or submit pull requests for improvements and new features.
 
-### 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
