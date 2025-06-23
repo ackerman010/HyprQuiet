@@ -28,15 +28,15 @@ echo "[4/14] Installing core packages via DNF..."
 sudo dnf upgrade -y
 sudo dnf install -y \
     dnf-plugins-core \
-    hyprland-wayland hyprland \
+    hyprland \
     waybar cava rofi mpv \
     thunar thunar-archive-plugin polkit-gnome \
     sddm swayidle swaylock dmenu \
     git cargo pkgconfig wayland-devel liblz4-devel \
     gtk3 gtk2 libnotify gsettings-desktop-schemas \
-    gnome-settings-daemon-fonts
+    fontconfig noto-fonts noto-fonts-emoji
 
-# 5. Enable and start SDDM
+# 5. Enable and start SDDM Enable and start SDDM
 echo "[5/14] Enabling SDDM display manager..."
 sudo systemctl enable sddm --now
 
